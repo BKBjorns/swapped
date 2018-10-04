@@ -15,7 +15,7 @@ db.run(`CREATE TABLE IF NOT EXISTS Account (
 
 // Create a table to store Product posts.
 db.run(`CREATE TABLE IF NOT EXISTS ProductPost (
-    id integer PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     postName TEXT NOT NULL,
     price INTEGER,
     category TEXT,
@@ -26,11 +26,13 @@ db.run(`CREATE TABLE IF NOT EXISTS ProductPost (
 
 // Create a table to store Comment.
 db.run(`CREATE TABLE IF NOT EXISTS Comment (
-    id integer PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    accountId INTEGER,
+    postId INTEGER,
     title TEXT,
     content TEXT,
-    commentCreatedAt INTEGER
-    FOREIGN KEY(accountId) REFERENCES Accounts(id)
+    commentCreatedAt INTEGER,
+    FOREIGN KEY(accountId) REFERENCES Account(id),
     FOREIGN KEY(postId) REFERENCES ProductPost(id)
 )`)
 
