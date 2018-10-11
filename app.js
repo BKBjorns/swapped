@@ -45,6 +45,40 @@ db.run(`CREATE TABLE IF NOT EXISTS Comment (
     FOREIGN KEY(\`postId\`) REFERENCES \`ProductPost\`(\`id\`) ON DELETE CASCADE
 )`)
 
+// Function used to validate a ProductPost resource.
+// Returns an array with error codes.
+function validatePost(productPost){
+	
+	const postErrors = []
+
+	if(productPost.postName.length < 3){
+		postErrors.push("The post name is too short")
+	}
+
+	if(productPost.postName.length > 50){
+		postErrors.push("The post name is too long")
+	}
+
+	if(productPost.price < 0){
+		postErrors.push("You have inserted negative number")
+	}
+
+	if(productPost.content.length < 10){
+		postErrors.push("The content is too short")
+	}
+
+	if(productPost.content.length > 1000){
+		postErrors.push("The content is too long")
+	}
+
+	if (productPost.category != "Furniture" && productPost.category != "Clothes" && productPost.category != "Technology" && productPost.category != "Other"){
+		postErrors.push("You haven't selected the right category.")
+}
+
+	return postErrors
+
+}
+
 
 // ===
 // Create a new Account.
@@ -274,7 +308,7 @@ app.post("/ProductPosts", function(request, response){ //Changed the ProductPost
 
     if(newProductError.length == 0){
 
-        const query = "INSERT INTO ProductPosts (postName, price, category, content, postCreatedAt, accountId) VALUES (?, ?, ?, ?, ?, ?)"
+        const query = "INSERT INTO ProductPost (postName, price, category, content, postCreatedAt, accountId) VALUES (?, ?, ?, ?, ?, ?)"
         db.run(query, values, function(error){
             if(error){
                 if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
@@ -330,7 +364,6 @@ if(error){
 
 
 
-
 // ===
 // Updating the post. THIS PART IS STILL NOT WORKING
 // ===
@@ -372,7 +405,7 @@ app.put("/ProductPosts/:id", function(request, response){
 	// Look for validation errors.
 	const postErrors = validatePost(receivedPost)
 
-	if(0 < errors.length){
+	if(0 < postErrors.length){
 		response.status(400).json(postErrors)
 		return
 	}
