@@ -16,8 +16,7 @@ db.run(`CREATE TABLE IF NOT EXISTS Account (
     id integer PRIMARY KEY AUTOINCREMENT,
     email TEXT unique,
     hashedPassword TEXT,
-    username TEXT,
-    accountId INTEGER			
+    username TEXT		
 )`)
 
 
@@ -50,6 +49,38 @@ db.run(`CREATE TABLE IF NOT EXISTS Comment (
 function validatePost(productPost){
 	
 	const postErrors = []
+
+	if(productPost.postName.length < 3){
+		postErrors.push("The post name is too short")
+	}
+
+	if(productPost.postName.length > 50){
+		postErrors.push("The post name is too long")
+	}
+
+	if(productPost.price < 0){
+		postErrors.push("You have inserted negative number")
+	}
+
+	if(productPost.content.length < 10){
+		postErrors.push("The content is too short")
+	}
+
+	if(productPost.content.length > 1000){
+		postErrors.push("The content is too long")
+	}
+
+	if (productPost.category != "Furniture" && productPost.category != "Clothes" && productPost.category != "Technology" && productPost.category != "Other"){
+		postErrors.push("You haven't selected the right category.")
+}
+
+	return postErrors
+
+}
+
+function validateAccount(accountUpdate){
+	
+	const accountErrors = []
 
 	if(productPost.postName.length < 3){
 		postErrors.push("The post name is too short")
@@ -245,6 +276,73 @@ app.post("/accounts", function(request, response){
 
 })
 
+
+// ===
+// Updating the account.
+// ===
+app.put("/accounts/:id", function(request, response){
+	
+	const id = request.params.id
+	const receivedAccount = request.body
+	const accountId = request.body.accountId
+	
+	const authorizationHeader = request.get("Authorization")
+	const accessToken = authorizationHeader.substr(7)	
+
+    let tokenAccountId = null
+	try{
+		const payload = jwt.verify(accessToken, jwtSecret)
+		tokenAccountId = payload.accountId
+	}catch(error){
+		response.status(401).end()
+		return
+	}
+
+	if(tokenAccountId != accountId){
+		response.status(401).end()
+		return
+	}
+
+	// Look for malformed resources.
+	if(typeof receivedAccount != "object" ||
+		 typeof receivedAccount.username != "string" ||
+		 typeof receivedAccount.accountId != "number" ){
+			response.status(422).end()
+			return
+	}
+
+	// Look for validation errors.
+	const accountErrors = validateAccount(receivedAccount)
+
+	if(0 < accountErrors.length){
+		response.status(400).json(accountErrors)
+		return
+	}
+
+	// Go ahead and update the resource.
+	const query = `
+		UPDATE Account SET hashedPassword = ?, username = ?, accountId = ?
+		WHERE id = ?
+	`
+	const values = [
+		receivedAccount.hashedPassword,
+		receivedAccount.username,
+		receievedAccount.accountId,
+		id
+	]
+	db.run(query, values, function(error){
+		if(error){
+			response.status(500).end()
+		}else{
+			const id = this.lastID
+			response.setHeader("Location", "/accounts/"+ id)
+			response.status(204).end()
+		}
+	})
+
+})
+
+
 // ===
 // Create a new Product post.
 // ===
@@ -365,7 +463,7 @@ if(error){
 
 
 // ===
-// Updating the post. THIS PART IS STILL NOT WORKING
+// Updating the post. 
 // ===
 app.put("/ProductPosts/:id", function(request, response){
 	
@@ -434,6 +532,52 @@ app.put("/ProductPosts/:id", function(request, response){
 		}
 	})
 
+})
+
+
+// ===
+// Deleting the post. 
+// ===
+
+// Allow clients to delete a post with a specific id, e.g.:
+// DELETE /ProductPosts/123
+app.delete("/ProductPosts/:id", function(request, response){
+
+	// const id = request.params.id
+	// const receivedPost = request.body
+	const accountId = request.body.accountId
+	
+	const authorizationHeader = request.get("Authorization")
+	const accessToken = authorizationHeader.substr(7)	
+
+    let tokenAccountId = null
+	try{
+		const payload = jwt.verify(accessToken, jwtSecret)
+		tokenAccountId = payload.accountId
+	}catch(error){
+		response.status(401).end()
+		return
+	}
+
+	if(tokenAccountId != accountId){
+		response.status(401).end()
+		return
+	}
+
+	const id = parseInt(request.params.id)
+	db.run("DELETE FROM ProductPost WHERE id = ?", [id], function(error){
+		if(error){
+			response.status(500).end()
+		}else{
+			const numberOfDeletetRows = this.changes
+			if(numberOfDeletetRows == 0){
+				response.status(404).end()
+			}else{
+				response.status(204).end()
+				return
+			}
+		}
+	})
 })
 
 
