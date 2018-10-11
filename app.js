@@ -451,13 +451,13 @@ app.get("/ProductPosts/:id", function(request, response){
 // ===
 app.get("/ProductPosts", function(request, response){
 	const query = "SELECT * FROM ProductPost"
-	db.all(query, function(error, ProductPost){
-		if(error){
-		response.status(500).end()
-		}else{
-		response.status(200).json(ProductPost)
-		} 
-	})
+db.all(query, function(error, ProductPost){
+if(error){
+   response.status(500).end()
+}else{
+   response.status(200).json(ProductPost)
+} 
+})
 })
 
 
@@ -536,7 +536,6 @@ app.put("/ProductPosts/:id", function(request, response){
 
 
 // ===
-<<<<<<< HEAD
 // Deleting the post. 
 // ===
 
@@ -549,20 +548,6 @@ app.delete("/ProductPosts/:id", function(request, response){
 	const accountId = request.body.accountId
 	
 	const authorizationHeader = request.get("Authorization")
-=======
-// Creating new comment
-// ===
-
-app.post("/comment", function(request, response){ 
-    const title = request.body.title
-    const content = request.body.content
-	const commentCreatedAt = request.body.commentCreatedAt
-	const accountId = request.body.accountId
-	const postId = request.body.postId
-    const values = [title, content, commentCreatedAt, accountId, postId]
-   
-    const authorizationHeader = request.get("Authorization")
->>>>>>> 24ff3a514e74b25641d0f0f1bc1d0f96dc924c5b
 	const accessToken = authorizationHeader.substr(7)	
 
     let tokenAccountId = null
@@ -578,7 +563,6 @@ app.post("/comment", function(request, response){
 		response.status(401).end()
 		return
 	}
-<<<<<<< HEAD
 
 	const id = parseInt(request.params.id)
 	db.run("DELETE FROM ProductPost WHERE id = ?", [id], function(error){
@@ -596,28 +580,6 @@ app.post("/comment", function(request, response){
 	})
 })
 
-=======
-	newCommentError = []
-
-	// Validation comments
-	if(title.length < 5){
-        newCommentError.push("The title is too short")
-    }
-    
-    if (title.length > 50){
-        newCommentError.push("The title is too long")
-	}
-	
-	if(content.length < 10){
-        newCommentError.push("The content is too short")
-    }
-    
-    if (content.length > 1000){
-        newCommentError.push("The content is too long")
-    }
-
-})
->>>>>>> 24ff3a514e74b25641d0f0f1bc1d0f96dc924c5b
 
 
 app.listen(3000)
