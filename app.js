@@ -655,5 +655,48 @@ app.post("/comment", function(request, response){
 })
 
 
+// ===
+// Deleting a comment. 
+// ===
+
+app.delete("/comments/:id", function(request, response){
+
+	const accountId = request.body.accountId
+	
+	const authorizationHeader = request.get("Authorization")
+	const accessToken = authorizationHeader.substr(7)	
+
+	let tokenAccountId = null
+	
+	try{
+		const payload = jwt.verify(accessToken, jwtSecret)
+		tokenAccountId = payload.accountId
+	}catch(error){
+		response.status(401).end()
+		return
+	}
+
+	if(tokenAccountId != accountId){
+		response.status(401).end()
+		return
+	}
+
+	const id = parseInt(request.params.id)
+	db.run("DELETE FROM Comment WHERE id = ?", [id], function(error){
+		if(error){
+			response.status(500).end()
+		}else{
+			const numberOfDeletetRows = this.changes
+			if(numberOfDeletetRows == 0){
+				response.status(404).end()
+			}else{
+				response.status(204).end()
+				return
+			}
+		}
+	})
+})
+
+
 
 app.listen(3000)
