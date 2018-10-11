@@ -570,12 +570,14 @@ app.delete("/ProductPosts/:id", function(request, response){
 // ===
 
 app.post("/comment", function(request, response){ 
+	const accountId = request.body.accountId
+	const postId = request.body.postId
     const title = request.body.title
     const content = request.body.content
 	const commentCreatedAt = request.body.commentCreatedAt
-	const accountId = request.body.accountId
-	const postId = request.body.postId
-    const values = [title, content, commentCreatedAt, accountId, postId]
+
+	const values = [title, content, commentCreatedAt, accountId, postId]
+
    
     const authorizationHeader = request.get("Authorization")
 	const accessToken = authorizationHeader.substr(7)	
@@ -610,7 +612,29 @@ app.post("/comment", function(request, response){
     
     if (content.length > 1000){
         newCommentError.push("The content is too long")
+	}
+	
+	if(newCommentError.length == 0){
+
+        const query = "INSERT INTO Comment (accountId, postId, title, content, commentCreatedAt) VALUES (?, ?, ?, ?, ?)"
+        db.run(query, values, function(error){
+            if(error){
+                if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
+					response.status(400).json(["AccountDoesNotExist"])
+                } 
+                else {
+                        response.status(500).end()
+                }
+            }else{
+                response.setHeader("Location", "/comment/"+this.lastID)
+                response.status(201).end()
+            }
+        })
+    } else{
+        response.status(400).json(newCommentError)
+        return
     }
+
 
 })
 
