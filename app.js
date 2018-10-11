@@ -82,31 +82,15 @@ function validateAccount(accountUpdate){
 	
 	const accountErrors = []
 
-	if(productPost.postName.length < 3){
-		postErrors.push("The post name is too short")
+	if(accountUpdate.username.length < 3){
+		accountErrors.push("Username is too short.")
 	}
 
-	if(productPost.postName.length > 50){
-		postErrors.push("The post name is too long")
+	if(accountUpdate.username.length > 80){
+		accountErrors.push("Username is too long.")
 	}
 
-	if(productPost.price < 0){
-		postErrors.push("You have inserted negative number")
-	}
-
-	if(productPost.content.length < 10){
-		postErrors.push("The content is too short")
-	}
-
-	if(productPost.content.length > 1000){
-		postErrors.push("The content is too long")
-	}
-
-	if (productPost.category != "Furniture" && productPost.category != "Clothes" && productPost.category != "Technology" && productPost.category != "Other"){
-		postErrors.push("You haven't selected the right category.")
-}
-
-	return postErrors
+	return accountErrors
 
 }
 
@@ -129,7 +113,7 @@ app.post("/accounts", function(request, response){
     if(username.length < 3){
         accountErrors.push("Username is too short.")
     }
-    if(username.length > 30){
+    if(username.length > 80){
         accountErrors.push("Username is too long.")
     }
     
@@ -321,13 +305,13 @@ app.put("/accounts/:id", function(request, response){
 
 	// Go ahead and update the resource.
 	const query = `
-		UPDATE Account SET hashedPassword = ?, username = ?, accountId = ?
+		UPDATE Account SET hashedPassword = ?, username = ?
 		WHERE id = ?
 	`
 	const values = [
 		receivedAccount.hashedPassword,
 		receivedAccount.username,
-		receievedAccount.accountId,
+		// receievedAccount.accountId,
 		id
 	]
 	db.run(query, values, function(error){
