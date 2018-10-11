@@ -536,7 +536,6 @@ app.put("/ProductPosts/:id", function(request, response){
 
 
 // ===
-<<<<<<< HEAD
 // Deleting the post. 
 // ===
 
@@ -549,7 +548,10 @@ app.delete("/ProductPosts/:id", function(request, response){
 	const accountId = request.body.accountId
 	
 	const authorizationHeader = request.get("Authorization")
-=======
+
+
+	
+// ===
 // Creating new comment
 // ===
 
@@ -562,7 +564,6 @@ app.post("/comment", function(request, response){
     const values = [title, content, commentCreatedAt, accountId, postId]
    
     const authorizationHeader = request.get("Authorization")
->>>>>>> 24ff3a514e74b25641d0f0f1bc1d0f96dc924c5b
 	const accessToken = authorizationHeader.substr(7)	
 
     let tokenAccountId = null
@@ -578,25 +579,6 @@ app.post("/comment", function(request, response){
 		response.status(401).end()
 		return
 	}
-<<<<<<< HEAD
-
-	const id = parseInt(request.params.id)
-	db.run("DELETE FROM ProductPost WHERE id = ?", [id], function(error){
-		if(error){
-			response.status(500).end()
-		}else{
-			const numberOfDeletetRows = this.changes
-			if(numberOfDeletetRows == 0){
-				response.status(404).end()
-			}else{
-				response.status(204).end()
-				return
-			}
-		}
-	})
-})
-
-=======
 	newCommentError = []
 
 	// Validation comments
@@ -617,7 +599,6 @@ app.post("/comment", function(request, response){
     }
 
 })
->>>>>>> 24ff3a514e74b25641d0f0f1bc1d0f96dc924c5b
 
 
 app.listen(3000)
