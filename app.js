@@ -548,25 +548,6 @@ app.delete("/ProductPosts/:id", function(request, response){
 	const accountId = request.body.accountId
 	
 	const authorizationHeader = request.get("Authorization")
-<<<<<<< HEAD
-
-
-	
-// ===
-// Creating new comment
-// ===
-
-app.post("/comment", function(request, response){ 
-    const title = request.body.title
-    const content = request.body.content
-	const commentCreatedAt = request.body.commentCreatedAt
-	const accountId = request.body.accountId
-	const postId = request.body.postId
-    const values = [title, content, commentCreatedAt, accountId, postId]
-   
-    const authorizationHeader = request.get("Authorization")
-=======
->>>>>>> d278de9075d3eb40fe8891cfe153738bdef200dd
 	const accessToken = authorizationHeader.substr(7)	
 
     let tokenAccountId = null
@@ -582,7 +563,52 @@ app.post("/comment", function(request, response){
 		response.status(401).end()
 		return
 	}
-<<<<<<< HEAD
+
+	const id = parseInt(request.params.id)
+	db.run("DELETE FROM ProductPost WHERE id = ?", [id], function(error){
+		if(error){
+			response.status(500).end()
+		}else{
+			const numberOfDeletetRows = this.changes
+			if(numberOfDeletetRows == 0){
+				response.status(404).end()
+			}else{
+				response.status(204).end()
+				return
+			}
+		}
+	})
+})
+
+
+// ===
+// Creating new comment
+// ===
+
+app.post("/comment", function(request, response){ 
+    const title = request.body.title
+    const content = request.body.content
+	const commentCreatedAt = request.body.commentCreatedAt
+	const accountId = request.body.accountId
+	const postId = request.body.postId
+    const values = [title, content, commentCreatedAt, accountId, postId]
+   
+    const authorizationHeader = request.get("Authorization")
+	const accessToken = authorizationHeader.substr(7)	
+
+    let tokenAccountId = null
+	try{
+		const payload = jwt.verify(accessToken, jwtSecret)
+		tokenAccountId = payload.accountId
+	}catch(error){
+		response.status(401).end()
+		return
+	}
+
+	if(tokenAccountId != accountId){
+		response.status(401).end()
+		return
+	}
 	newCommentError = []
 
 	// Validation comments
@@ -603,25 +629,7 @@ app.post("/comment", function(request, response){
     }
 
 })
-=======
 
-	const id = parseInt(request.params.id)
-	db.run("DELETE FROM ProductPost WHERE id = ?", [id], function(error){
-		if(error){
-			response.status(500).end()
-		}else{
-			const numberOfDeletetRows = this.changes
-			if(numberOfDeletetRows == 0){
-				response.status(404).end()
-			}else{
-				response.status(204).end()
-				return
-			}
-		}
-	})
-})
-
->>>>>>> d278de9075d3eb40fe8891cfe153738bdef200dd
 
 
 app.listen(3000)
