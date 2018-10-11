@@ -404,5 +404,54 @@ app.put("/ProductPosts/:id", function(request, response){
 })
 
 
+// ===
+// Creating new comment
+// ===
+
+app.post("/comment", function(request, response){ 
+    const title = request.body.title
+    const content = request.body.content
+	const commentCreatedAt = request.body.commentCreatedAt
+	const accountId = request.body.accountId
+	const postId = request.body.postId
+    const values = [title, content, commentCreatedAt, accountId, postId]
+   
+    const authorizationHeader = request.get("Authorization")
+	const accessToken = authorizationHeader.substr(7)	
+
+    let tokenAccountId = null
+	try{
+		const payload = jwt.verify(accessToken, jwtSecret)
+		tokenAccountId = payload.accountId
+	}catch(error){
+		response.status(401).end()
+		return
+	}
+
+	if(tokenAccountId != accountId){
+		response.status(401).end()
+		return
+	}
+	newCommentError = []
+
+	// Validation comments
+	if(title.length < 5){
+        newCommentError.push("The title is too short")
+    }
+    
+    if (title.length > 50){
+        newCommentError.push("The title is too long")
+	}
+	
+	if(content.length < 10){
+        newCommentError.push("The content is too short")
+    }
+    
+    if (content.length > 1000){
+        newCommentError.push("The content is too long")
+    }
+
+
+
 
 app.listen(3000)
