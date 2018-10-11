@@ -484,7 +484,7 @@ app.post("/comment", function(request, response){
         newCommentError.push("The content is too long")
     }
 
-
+})
 
 
 app.listen(3000)
