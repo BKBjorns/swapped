@@ -353,13 +353,13 @@ app.get("/ProductPosts/:id", function(request, response){
 // ===
 app.get("/ProductPosts", function(request, response){
 	const query = "SELECT * FROM ProductPost"
-db.all(query, function(error, ProductPost){
-if(error){
-   response.status(500).end()
-}else{
-   response.status(200).json(ProductPost)
-} 
-})
+	db.all(query, function(error, ProductPost){
+		if(error){
+		response.status(500).end()
+		}else{
+		response.status(200).json(ProductPost)
+		} 
+	})
 })
 
 
