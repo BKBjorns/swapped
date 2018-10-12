@@ -849,13 +849,5 @@ app.put("/comments/:id", function(request, response){
 
 })
 
-// ===
-// Retrieving all comments for one specific post
-// ===
-
-
-
-
-
 
 app.listen(3000)
