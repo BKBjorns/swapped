@@ -513,18 +513,18 @@ app.get("/productPosts/:id", function(request, response){
 			response.status(404).end()
 		}else {
 			response.status(200).json(ProductPost)
+
+			// const querycomments = "SELECT * FROM Comment WHERE id = ?"
+			// db.all(querycomments, function(error, comments){
+			// 	if(error){
+			// 		response.status(500).end()
+			// 	}else if(!comments){
+			// 		response.status(404).end()
+			// 	}else {
+			// 		response.status(200).json(comments)
+			// 	} 	
+			// })
 		}
-	})
-	
-	const querycomments = "SELECT * FROM Comment WHERE id = ?"
-	db.all(querycomments, function(error, comments){
-		if(error){
-			response.status(500).end()
-		}else if(!comments){
-			response.status(404).end()
-		}else {
-			response.status(200).json(comments)
-		} 	
 	})
  })
 
@@ -538,7 +538,7 @@ app.get("/productPosts", function(request, response){
 		if(error){
    			response.status(500).end()
 		}else{
-   			response.status(200).json(ProductPost)
+			response.status(200).json(ProductPost)
 		} 
 	})
 
@@ -867,13 +867,10 @@ app.put("/comments/:id", function(request, response){
 
 
 
-app.get("/ProductPost/:id", function(request, response){
+app.get("/comments", function(request, response){
 	
-	const id = request.params.id
-	const receivedComment = request.body
-	const accountId = request.body.accountId
 
-	const query = "SELECT * FROM Comments WHERE postid = "
+	
 	// const query = "SELECT * FROM ProductPost"
 	// db.all(query, function(error, ProductPost){
 	// 	if(error){
