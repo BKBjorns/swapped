@@ -851,8 +851,6 @@ app.put("/comments/:id", function(request, response){
 
 })
 
-<<<<<<< HEAD
-=======
 // ===
 // Retrieving all comments for one specific post
 // ===
@@ -880,6 +878,5 @@ app.get("/ProductPost/:id", function(request, response){
 
 
 
->>>>>>> f60be39a75afb122c9b443360fb7116e13f75bbb
 
 app.listen(3000)
