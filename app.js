@@ -492,9 +492,17 @@ app.get("/ProductPosts/:id", function(request, response){
 		}else {
 			response.status(200).json(ProductPost)
 		}
- 
-		
-		
+	})
+	
+	const querycomments = "SELECT * FROM Comment WHERE id = ?"
+	db.all(querycomments, function(error, comments){
+		if(error){
+			response.status(500).end()
+		}else if(!comments){
+			response.status(404).end()
+		}else {
+			response.status(200).json(comments)
+		} 	
 	})
  })
 
@@ -511,6 +519,7 @@ app.get("/ProductPosts", function(request, response){
    			response.status(200).json(ProductPost)
 		} 
 	})
+
 })
 
 
