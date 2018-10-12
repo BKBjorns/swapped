@@ -670,15 +670,6 @@ app.post("/comments", function(request, response){
 	if(title.length < 3){
 		commentErrors.push("The title is too short")
 	}
-<<<<<<< HEAD
-
-	if(title.length > 50){
-		commentErrors.push("The title is too long")
-	}
-
-	if(content.length < 10){
-		commentErrors.push("The content is too short")
-=======
 	
 	if(content.length < 2){
         newCommentError.push("The content is too short")
@@ -686,7 +677,6 @@ app.post("/comments", function(request, response){
     
     if (content.length > 1000){
         newCommentError.push("The content is too long")
->>>>>>> 5464fd703fe33475c6dc70d7fdd532c2e5a2535a
 	}
 
 	if(content.length > 1000){
@@ -702,7 +692,9 @@ app.post("/comments", function(request, response){
             if(error){
                 if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
 					response.status(400).json(["AccountDoesNotExist"])
-                } 
+                } else if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
+					response.status(400).json(["ProductPostDoesNotExist"])
+				}
                 else {
                         response.status(500).end()
                 }
@@ -791,10 +783,11 @@ app.put("/comments/:id", function(request, response){
 
 	// Look for malformed resources.
 	if(typeof receivedComment != "object" ||
-		 typeof receivedComment.title != "string" ||
-		 typeof receivedComment.content != "string" ||
-		 typeof receivedComment.commentCreatedAt != "number" ||
-		 typeof receivedComment.accountId != "number" ){
+		typeof receivedComment.accountId != "number" ||
+		typeof receivedComment.postId != "number" ||
+		typeof receivedComment.title != "string" ||
+		typeof receivedComment.content != "string" ||
+		typeof receivedComment.commentCreatedAt != "number" ){
 			response.status(422).end()
 			return
 	}
@@ -832,6 +825,12 @@ app.put("/comments/:id", function(request, response){
 	})
 
 })
+
+// ===
+// Retrieving all comments for one specific post
+// ===
+
+app.get
 
 
 
