@@ -153,6 +153,11 @@ app.post("/accounts", function(request, response){
         accountErrors.push("Password is too short.")
 	}
 	
+	if (! /^[a-zA-Z0-9]+$/.test(username)) {
+        // Validation failed.
+        valid = false
+        errors.push("invalidCharacters")
+    }
 
     if(accountErrors.length == 0) { 
         const query = `
@@ -726,10 +731,7 @@ app.post("/comments", function(request, response){
             if(error){
                 if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
 					response.status(400).json(["AccountDoesNotExist"])
-                } else if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
-					response.status(400).json(["ProductPostDoesNotExist"])
-				}
-                else {
+                } else {
                         response.status(500).end()
                 }
             }else{
@@ -883,6 +885,7 @@ app.get("/ProductPost/:id", function(request, response){
 	// 	} 
 	// })
 })
+
 
 
 
