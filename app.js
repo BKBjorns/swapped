@@ -70,7 +70,7 @@ function validatePost(productPost){
 		postErrors.push("The content is too long")
 	}
 
-	if (productPost.category != "Furniture" && productPost.category != "Clothes" && productPost.category != "Technology" && productPost.category != "Other"){
+	if (productPost.category != "Furniture" && productPost.category != "Clothes" && productPost.category != "Technology" && productPost.category != "Books" && productPost.category != "Other" ){
 		postErrors.push("You haven't selected the right category.")
 }
 
@@ -88,6 +88,10 @@ function validateAccount(accountUpdate){
 
 	if(accountUpdate.username.length > 80){
 		accountErrors.push("Username is too long.")
+	}
+
+	if(accountUpdate.hashedPassword.length < 10){
+        accountErrors.push("Password is too short.")
 	}
 
 	return accountErrors
@@ -130,7 +134,7 @@ app.post("/accounts", function(request, response){
 	const hashedPassword = request.body.hashedPassword
     const theHash = bcrypt.hashSync(hashedPassword, saltRounds)
     const username = request.body.username
-    const values = [email, hashedPassword, username]
+    const values = [email, theHash, username]
     
 
     var accountErrors = [] 
@@ -143,7 +147,12 @@ app.post("/accounts", function(request, response){
     
     if(!email.endsWith('@student.ju.se')){
         accountErrors.push("This is not JU email.")
-    }
+	}
+	
+	if(hashedPassword.length < 10){
+        accountErrors.push("Password is too short.")
+	}
+	
 
     if(accountErrors.length == 0) { 
         const query = `
@@ -213,7 +222,7 @@ app.post("/tokens", function(request, response){
 	const grant_type = request.body.grant_type
 	const email = request.body.email
 	const hashedPassword = request.body.hashedPassword
-
+	
 	const query = `SELECT * FROM Account WHERE email = ?`
 	const values = [email]
 
@@ -248,7 +257,8 @@ app.post("/accounts", function(request, response){
 	const title = request.body.title
 	const abstract = request.body.abstract
 	const accountId = request.body.accountId
-
+	const hashedPassword = request.body.hashedPassword
+	// const theHash = bcrypt.hashSync(hashedPassword, saltRounds)
 	const authorizationHeader = request.get("Authorization")
 	const accessToken = authorizationHeader.substr(7)
 
@@ -398,7 +408,7 @@ app.delete("/accounts/:id", function(request, response){
 // Create a new Product post.
 // ===
 
-app.post("/ProductPosts", function(request, response){ //Changed the ProductPost to Posts so its coherent with other endings (accounts and comments).
+app.post("/productPosts", function(request, response){ //Changed the ProductPost to Posts so its coherent with other endings (accounts and comments).
     const postName = request.body.postName				//Need to update the second part of the report.
     const price = request.body.price
     const category = request.body.category
@@ -425,6 +435,18 @@ app.post("/ProductPosts", function(request, response){ //Changed the ProductPost
 	}
 
 
+	// Look for malformed resources.
+	if(typeof values != "object" ||
+	typeof values.postName != "string" ||
+	typeof values.price != "number" ||
+	typeof values.category != "string" ||
+	typeof values.content != "string" ||
+	typeof values.postCreatedAt != "number" ||
+	typeof values.accountId != "number" ){
+	   response.status(422).end()
+	   return
+}
+
 
     var newProductError = []
 
@@ -450,7 +472,7 @@ app.post("/ProductPosts", function(request, response){ //Changed the ProductPost
         newProductError.push("The content is too long")
     }
 
-	if (category != "Furniture" && category != "Clothes" && category != "Technology" && category != "Other"){
+	if (category != "Furniture" && category != "Clothes" && category != "Technology" && category != "Books" && category != "Other"){
 		    newProductError.push("You haven't selected the right category.")
 	}
 	
@@ -467,7 +489,7 @@ app.post("/ProductPosts", function(request, response){ //Changed the ProductPost
                         response.status(500).end()
                 }
             }else{
-                response.setHeader("Location", "/ProductPosts/"+this.lastID)
+                response.setHeader("Location", "/productPosts/"+this.lastID)
                 response.status(201).end()
             }
         })
@@ -482,7 +504,7 @@ app.post("/ProductPosts", function(request, response){ //Changed the ProductPost
 // ===
 // Retrieving single post.
 // ===
-app.get("/ProductPosts/:id", function(request, response){ 
+app.get("/productPosts/:id", function(request, response){ 
 	const id = parseInt(request.params.id)
 	db.get("SELECT * FROM ProductPost WHERE id = ?", [id], function(error, ProductPost){ 
 		if(error){
@@ -510,7 +532,7 @@ app.get("/ProductPosts/:id", function(request, response){
 // ===
 // Retrieving all posts.
 // ===
-app.get("/ProductPosts", function(request, response){
+app.get("/productPosts", function(request, response){
 	const query = "SELECT * FROM ProductPost"
 	db.all(query, function(error, ProductPost){
 		if(error){
@@ -527,11 +549,12 @@ app.get("/ProductPosts", function(request, response){
 // ===
 // Updating the post. 
 // ===
-app.put("/ProductPosts/:id", function(request, response){
+app.put("/productPosts/:id", function(request, response){
 	
 	const id = request.params.id
 	const receivedPost = request.body
 	const accountId = request.body.accountId
+
 	
 	const authorizationHeader = request.get("Authorization")
 	const accessToken = authorizationHeader.substr(7)	
@@ -590,7 +613,7 @@ app.put("/ProductPosts/:id", function(request, response){
 			response.status(500).end()
 		}else{
 			const id = this.lastID
-			response.setHeader("Location", "/ProductPosts/"+ id)
+			response.setHeader("Location", "/productPosts/"+ id)
 			response.status(204).end()
 		}
 	})
@@ -604,7 +627,7 @@ app.put("/ProductPosts/:id", function(request, response){
 
 // Allow clients to delete a post with a specific id, e.g.:
 // DELETE /ProductPosts/123
-app.delete("/ProductPosts/:id", function(request, response){
+app.delete("/productPosts/:id", function(request, response){
 
 	// const id = request.params.id
 	// const receivedPost = request.body
