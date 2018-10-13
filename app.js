@@ -10,6 +10,8 @@ const jwt = require('jsonwebtoken')
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: false}))
 
+db.run("PRAGMA foreign_keys = ON;")
+
 // Create a table to store Accounts. 
 // Added accountId to all three tables, checkes if the right person is creating the post/comment.
 db.run(`CREATE TABLE IF NOT EXISTS Account (
@@ -490,7 +492,7 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
         db.run(query, values, function(error){
             if(error){
                 if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
-					response.status(400).json(["AccountDoesNotExist"])
+					response.status(400).json(["AccountorPostDoesNotExist"])
                 } 
                 else {
                         response.status(500).end()
@@ -511,7 +513,7 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
 // ===
 // Retrieving single post.
 // ===
-app.get("/productPosts/:id", function(request, response){ 
+app.get("/productPosts/", function(request, response){ 
 	const id = parseInt(request.params.id)
 	db.get("SELECT * FROM ProductPost WHERE id = ?", [id], function(error, ProductPost){ 
 		if(error){
@@ -520,18 +522,18 @@ app.get("/productPosts/:id", function(request, response){
 			response.status(404).end()
 		}else {
 			response.status(200).json(ProductPost)
+
+			// const querycomments = "SELECT * FROM Comment WHERE id = ?"
+			// db.all(querycomments, function(error, comments){
+			// 	if(error){
+			// 		response.status(500).end()
+			// 	}else if(!comments){
+			// 		response.status(404).end()
+			// 	}else {
+			// 		response.status(200).json(comments)
+			// 	} 	
+			// })
 		}
-	})
-	
-	const querycomments = "SELECT * FROM Comment WHERE id = ?"
-	db.all(querycomments, function(error, comments){
-		if(error){
-			response.status(500).end()
-		}else if(!comments){
-			response.status(404).end()
-		}else {
-			response.status(200).json(comments)
-		} 	
 	})
  })
 
@@ -545,7 +547,7 @@ app.get("/productPosts", function(request, response){
 		if(error){
    			response.status(500).end()
 		}else{
-   			response.status(200).json(ProductPost)
+			response.status(200).json(ProductPost)
 		} 
 	})
 
@@ -866,26 +868,23 @@ app.put("/comments/:id", function(request, response){
 
 // ===
 // Retrieving all comments for one specific post
+// http://localhost:3000/comments?postId=1
 // ===
+// 
 
+app.get("/comments", function(request, response){
+	const postId = request.query.postId
 
-
-
-app.get("/ProductPost/:id", function(request, response){
-	
-	const id = request.params.id
-	const receivedComment = request.body
-	const accountId = request.body.accountId
-
-	const query = "SELECT * FROM Comments WHERE postid = "
-	// const query = "SELECT * FROM ProductPost"
-	// db.all(query, function(error, ProductPost){
-	// 	if(error){
-   	// 		response.status(500).end()
-	// 	}else{
-   	// 		response.status(200).json(ProductPost)
-	// 	} 
-	// })
+	const querycomments = "SELECT * FROM Comment WHERE postId = ?"
+			db.all(querycomments, [postId], function(error, comments){
+				if(error){
+					response.status(500).end()
+				}else if(!comments){
+					response.status(404).end()
+				}else {
+					response.status(200).json(comments)
+				} 	
+			})
 })
 
 
