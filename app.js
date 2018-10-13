@@ -130,7 +130,7 @@ const saltRounds = 10
 
 app.post("/accounts", function(request, response){
 
-    const email = request.body.email
+    const email = request.body.email 
 	const hashedPassword = request.body.hashedPassword
     const theHash = bcrypt.hashSync(hashedPassword, saltRounds)
     const username = request.body.username
@@ -152,7 +152,7 @@ app.post("/accounts", function(request, response){
 	if(hashedPassword.length < 10){
         accountErrors.push("Password is too short.")
 	}
-	
+
 	if (! /^[a-zA-Z0-9]+$/.test(username)) {
         // Validation failed.
         valid = false
@@ -225,8 +225,8 @@ const jwtSecret = "dsjlksdjlkjfdsl"
 app.post("/tokens", function(request, response){
 	
 	const grant_type = request.body.grant_type
-	const email = request.body.email
-	const hashedPassword = request.body.hashedPassword
+	const email = request.body.username //change this into username
+	const hashedPassword = request.body.password //password
 	
 	const query = `SELECT * FROM Account WHERE email = ?`
 	const values = [email]
@@ -237,7 +237,7 @@ app.post("/tokens", function(request, response){
 		}else if(!account){
 			response.status(404).json({error: "invalid_client"})
 		}else{
-			if(account.hashedPassword == hashedPassword){
+			if(bcrypt.compareSync(hashedPassword, account.hashedPassword)){
 
 				const accessToken = jwt.sign({accountId: account.id}, jwtSecret)
 				const idToken = jwt.sign({sub: account.id, preferred_email: email}, jwtSecret)
@@ -305,10 +305,12 @@ app.post("/accounts", function(request, response){
 // ===
 app.put("/accounts/:id", function(request, response){
 	
-	const id = request.params.id
+	const accountId = request.params.id
 	const receivedAccount = request.body
-	const accountId = request.body.accountId
-	
+	const hashedPassword = request.body.hashedPassword
+	const theHash = bcrypt.hashSync(hashedPassword, saltRounds)
+	// const hashedPassword = request.body.hashedPassword
+	// const accountId = request.body.accountId
 	const authorizationHeader = request.get("Authorization")
 	const accessToken = authorizationHeader.substr(7)	
 
@@ -329,7 +331,7 @@ app.put("/accounts/:id", function(request, response){
 	// Look for malformed resources.
 	if(typeof receivedAccount != "object" ||
 		 typeof receivedAccount.username != "string" ||
-		 typeof receivedAccount.accountId != "number" ){
+		 typeof receivedAccount.hashedPassword != "string" ){
 			response.status(422).end()
 			return
 	}
@@ -348,10 +350,10 @@ app.put("/accounts/:id", function(request, response){
 		WHERE id = ?
 	`
 	const values = [
-		receivedAccount.hashedPassword,
+		theHash,
 		receivedAccount.username,
 		// receievedAccount.accountId,
-		id
+		accountId
 	]
 	db.run(query, values, function(error){
 		if(error){
