@@ -23,6 +23,7 @@ db.run(`CREATE TABLE IF NOT EXISTS Account (
 
 
 // Create a table to store Product posts.
+// postName should be title
 db.run(`CREATE TABLE IF NOT EXISTS ProductPost (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     postName TEXT NOT NULL,
@@ -521,16 +522,6 @@ app.get("/productPosts/", function(request, response){
 		}else {
 			response.status(200).json(ProductPost)
 
-			// const querycomments = "SELECT * FROM Comment WHERE id = ?"
-			// db.all(querycomments, function(error, comments){
-			// 	if(error){
-			// 		response.status(500).end()
-			// 	}else if(!comments){
-			// 		response.status(404).end()
-			// 	}else {
-			// 		response.status(200).json(comments)
-			// 	} 	
-			// })
 		}
 	})
  })
@@ -538,7 +529,7 @@ app.get("/productPosts/", function(request, response){
 
 // ===
 // Retrieving all posts.
-// ===
+// === Missing the part to sort the post by "newest first"
 app.get("/productPosts", function(request, response){
 	const query = "SELECT * FROM ProductPost"
 	db.all(query, function(error, ProductPost){
@@ -868,7 +859,7 @@ app.put("/comments/:id", function(request, response){
 // Retrieving all comments for one specific post
 // http://localhost:3000/comments?postId=1
 // ===
-// 
+// We are missing the part to sort the comments by what is the newest
 
 app.get("/comments", function(request, response){
 	const postId = request.query.postId
