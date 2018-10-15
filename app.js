@@ -23,7 +23,7 @@ db.run(`CREATE TABLE IF NOT EXISTS Account (
 
 
 // Create a table to store Product posts.
-// postName should be title
+// postName should be title and postCreatedAt-createdAt
 db.run(`CREATE TABLE IF NOT EXISTS ProductPost (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     postName TEXT NOT NULL,
@@ -49,6 +49,7 @@ db.run(`CREATE TABLE IF NOT EXISTS Comment (
 
 // Function used to validate a ProductPost resource.
 // Returns an array with error codes.
+// need to update the code with correct error codes everywhere
 function validatePost(productPost){
 	
 	const postErrors = []
