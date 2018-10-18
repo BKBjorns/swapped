@@ -135,6 +135,7 @@ function validateComment(commentUpdate){
 // ===
 // Create a new Account.
 // ===
+
 const saltRounds = 10
 
 app.post("/accounts", function(request, response){
@@ -534,7 +535,7 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
 // ===
 app.get("/productPosts/:id", function(request, response){ 
 	const id = parseInt(request.params.id)
-	db.get("SELECT * FROM ProductPost WHERE id = ?", [id], function(error, ProductPost){ 
+	db.get("SELECT * FROM ProductPost WHERE id = ? ORDER BY postCreatedAt DESC", [id], function(error, ProductPost){ 
 		if(error){
 			response.status(500).end()
 		}else if(!ProductPost){
@@ -549,7 +550,7 @@ app.get("/productPosts/:id", function(request, response){
 
 // ===
 // Retrieving all posts.
-// === Missing the part to sort the post by "newest first"
+// ===
 app.get("/productPosts", function(request, response){
 	const query = "SELECT * FROM ProductPost ORDER BY postCreatedAt DESC"
 	db.all(query, function(error, ProductPost){
@@ -735,8 +736,6 @@ app.post("/comments", function(request, response){
 	}
 
 
-	// const commentErrors = validateComment(receivedComment)
-
 	if(commentErrors.length == 0){
 
         const query = "INSERT INTO Comment (accountId, postId, title, content, commentCreatedAt) VALUES (?, ?, ?, ?, ?)"
@@ -879,7 +878,6 @@ app.put("/comments/:id", function(request, response){
 // Retrieving all comments for one specific post
 // http://localhost:3000/comments?postId=1
 // ===
-// We are missing the part to sort the comments by what is the newest
 
 app.get("/comments", function(request, response){
 	const postId = request.query.postId
