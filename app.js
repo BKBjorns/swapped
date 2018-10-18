@@ -55,27 +55,27 @@ function validatePost(productPost){
 	const postErrors = []
 
 	if(productPost.postName.length < 3){
-		postErrors.push("The post name is too short")
+		postErrors.push("titleTooShort ")
 	}
 
 	if(productPost.postName.length > 50){
-		postErrors.push("The post name is too long")
+		postErrors.push("titleTooLong ")
 	}
 
 	if(productPost.price < 0){
-		postErrors.push("You have inserted negative number")
+		postErrors.push("priceNegative")
 	}
 
 	if(productPost.content.length < 10){
-		postErrors.push("The content is too short")
+		postErrors.push("contentTooShort ")
 	}
 
 	if(productPost.content.length > 1000){
-		postErrors.push("The content is too long")
+		postErrors.push("contentTooLong ")
 	}
 
 	if (productPost.category != "Furniture" && productPost.category != "Clothes" && productPost.category != "Technology" && productPost.category != "Books" && productPost.category != "Other" ){
-		postErrors.push("You haven't selected the right category.")
+		postErrors.push("wrongCategory")
 }
 
 	return postErrors
@@ -84,18 +84,23 @@ function validatePost(productPost){
 
 function validateAccount(accountUpdate){
 	
+	var letters = /^[A-Za-z]+$/
 	const accountErrors = []
 
 	if(accountUpdate.username.length < 3){
-		accountErrors.push("Username is too short.")
+		accountErrors.push("usernameIsTooShort")
 	}
 
 	if(accountUpdate.username.length > 80){
-		accountErrors.push("Username is too long.")
+		accountErrors.push("usernameIsTooLong")
 	}
 
 	if(accountUpdate.hashedPassword.length < 10){
-        accountErrors.push("Password is too short.")
+        accountErrors.push("passwordIsTooShort")
+	}
+
+	if (!username.match(letters)){
+		accountErrors.push("invalidCharacters")
 	}
 
 	return accountErrors
@@ -107,19 +112,19 @@ function validateComment(commentUpdate){
 	const commentErrors = []
 
 	if(commentUpdate.title.length < 5){
-		commentErrors.push("The title is too short")
+		commentErrors.push("titleTooShort")
 	}
 
 	if(commentUpdate.title.length > 50){
-		commentErrors.push("The title is too long")
+		commentErrors.push("titleTooLong")
 	}
 
 	if(commentUpdate.content.length < 10){
-		commentErrors.push("The content is too short")
+		commentErrors.push("contentTooShort")
 	}
 
 	if(commentUpdate.content.length > 1000){
-		commentErrors.push("The content is too long")
+		commentErrors.push("contentTooLong")
 	}
 
 	return commentErrors
@@ -143,18 +148,18 @@ app.post("/accounts", function(request, response){
 
     var accountErrors = [] 
     if(username.length < 3){
-        accountErrors.push("Username is too short.")
+        accountErrors.push("usernameIsTooShort")
     }
     if(username.length > 80){
-        accountErrors.push("Username is too long.")
+        accountErrors.push("usernameIsTooLong")
     }
     
     if(!email.endsWith('@student.ju.se')){
-        accountErrors.push("This is not JU email.")
+        accountErrors.push("emailWrongFormat")
 	}
 	
 	if(hashedPassword.length < 10){
-        accountErrors.push("Password is too short.")
+        accountErrors.push("passwordIsTooShort")
 	}
 
 	if (! /^[a-zA-Z0-9]+$/.test(username)) {
@@ -171,7 +176,7 @@ app.post("/accounts", function(request, response){
     db.run(query, values, function(error){
 		if(error){
             if(error.message == "SQLITE_CONSTRAINT: UNIQUE constraint failed: Account.email"){
-            response.status(400).json(["Email taken."]) 
+            response.status(400).json(["emailNotUnique"]) 
             }
             else {
                 response.status(500).end()
@@ -228,7 +233,7 @@ const jwtSecret = "dsjlksdjlkjfdsl"
 
 app.post("/tokens", function(request, response){
 	
-	const grant_type = request.body.grant_type
+	// const grant_type = request.body.grant_type
 	const email = request.body.username //change this into username
 	const hashedPassword = request.body.password //password
 	
@@ -461,30 +466,29 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
 
     var newProductError = []
 
-    // Missing validation for price and category. FIXED!
-
+    
     if(postName.length < 3){
-        newProductError.push("The post name is too short")
+        newProductError.push("titleTooShort")
     }
     
     if (postName.length > 50){
-        newProductError.push("The post name is too long")
+        newProductError.push("titleTooLong")
     }
 
 	if (price < 0){
-        newProductError.push("You have inserted negative number")
+        newProductError.push("priceNegative")
     }
 
     if(content.length < 10){
-        newProductError.push("The content is too short")
+        newProductError.push("contentTooShort")
     }
     
     if (content.length > 1000){
-        newProductError.push("The content is too long")
+        newProductError.push("contentTooLong")
     }
 
 	if (category != "Furniture" && category != "Clothes" && category != "Technology" && category != "Books" && category != "Other"){
-		    newProductError.push("You haven't selected the right category.")
+		    newProductError.push("wrongCategory")
 	}
 	
 
@@ -534,7 +538,7 @@ app.get("/productPosts/", function(request, response){
 // Retrieving all posts.
 // === Missing the part to sort the post by "newest first"
 app.get("/productPosts", function(request, response){
-	const query = "SELECT * FROM ProductPost"
+	const query = "SELECT * FROM ProductPost ORDER BY createdAt DESC"
 	db.all(query, function(error, ProductPost){
 		if(error){
    			response.status(500).end()
@@ -703,20 +707,20 @@ app.post("/comments", function(request, response){
 	const commentErrors = []
 
 	if(title.length < 3){
-		commentErrors.push("The title is too short")
+		commentErrors.push("titleTooShort")
+	}
+	if(title.length > 50){
+		commentErrors.push("titleTooLong")
 	}
 	
 	if(content.length < 2){
-        newCommentError.push("The content is too short")
+        newCommentError.push("contentTooShort")
     }
     
     if (content.length > 1000){
-        newCommentError.push("The content is too long")
+        newCommentError.push("contentTooLong")
 	}
 
-	if(content.length > 1000){
-		commentErrors.push("The content is too long")
-	}
 
 	// const commentErrors = validateComment(receivedComment)
 
@@ -726,7 +730,7 @@ app.post("/comments", function(request, response){
         db.run(query, values, function(error){
             if(error){
                 if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
-					response.status(400).json(["AccountDoesNotExist"])
+					response.status(400).json(["accountNotFound"])
                 } else {
                         response.status(500).end()
                 }
@@ -867,7 +871,7 @@ app.put("/comments/:id", function(request, response){
 app.get("/comments", function(request, response){
 	const postId = request.query.postId
 
-	const querycomments = "SELECT * FROM Comment WHERE postId = ?"
+	const querycomments = "SELECT * FROM Comment WHERE postId = ? ORDER BY createdAt DESC"
 			db.all(querycomments, [postId], function(error, comments){
 				if(error){
 					response.status(500).end()
