@@ -139,7 +139,7 @@ app.post("/accounts", function(request, response){
     const theHash = bcrypt.hashSync(hashedPassword, saltRounds)
     const username = request.body.username
     const values = [email, theHash, username]
-    
+    const createdAccount = request.body
 
     var accountErrors = [] 
     if(username.length < 3){
@@ -161,7 +161,19 @@ app.post("/accounts", function(request, response){
         // Validation failed.
         valid = false
         errors.push("invalidCharacters")
-    }
+	}
+	
+	// Look for malformed resources. !!!!!!!!!!!!!!!!!!!!!!
+	if(typeof createdAccount != "object" ||
+	typeof createdAccount.email != "string" ||
+	typeof createdAccount.hashedPassword != "string" ||
+	typeof createdAccount.username != "string" ){
+	   response.status(422).end()
+	   return
+}
+
+// Look for validation errors.
+// const accountErrors = validateAccount(createdAccount)
 
     if(accountErrors.length == 0) { 
         const query = `
@@ -426,7 +438,8 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
     const content = request.body.content
     const postCreatedAt = request.body.postCreatedAt
     const accountId = request.body.accountId
-    const values = [postName, price, category, content, postCreatedAt, accountId]
+	const values = [postName, price, category, content, postCreatedAt, accountId]
+	const createdPost = request.body
    
     const authorizationHeader = request.get("Authorization")
 	const accessToken = authorizationHeader.substr(7)	
@@ -447,13 +460,13 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
 
 
 	// Look for malformed resources.
-	if(typeof values != "object" ||
-	typeof values.postName != "string" ||
-	typeof values.price != "number" ||
-	typeof values.category != "string" ||
-	typeof values.content != "string" ||
-	typeof values.postCreatedAt != "number" ||
-	typeof values.accountId != "number" ){
+	if(typeof createdPost != "object" ||
+	typeof createdPost.postName != "string" ||
+	typeof createdPost.price != "number" ||
+	typeof createdPost.category != "string" ||
+	typeof createdPost.content != "string" ||
+	typeof createdPost.postCreatedAt != "number" ||
+	typeof createdPost.accountId != "number" ){
 	   response.status(422).end()
 	   return
 }
