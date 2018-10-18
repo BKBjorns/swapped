@@ -551,7 +551,7 @@ app.get("/productPosts/", function(request, response){
 // Retrieving all posts.
 // === Missing the part to sort the post by "newest first"
 app.get("/productPosts", function(request, response){
-	const query = "SELECT * FROM ProductPost ORDER BY createdAt DESC"
+	const query = "SELECT * FROM ProductPost ORDER BY postCreatedAt DESC"
 	db.all(query, function(error, ProductPost){
 		if(error){
    			response.status(500).end()
