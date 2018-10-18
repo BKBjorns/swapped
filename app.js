@@ -566,6 +566,11 @@ app.patch("/productPosts/:id", function(request, response){
 					response.status(401).end()
 					return
 				}
+				// Just added this!! Don't know if it works.
+				if(tokenAccountId != accountIdPost){
+					response.status(401).end()
+					return
+				}
 			
 				// Look for malformed resources.
 				if(typeof receivedPost != "object" ||
