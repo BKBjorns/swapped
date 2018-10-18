@@ -519,7 +519,7 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
 // ===
 // Retrieving single post.
 // ===
-app.get("/productPosts/", function(request, response){ 
+app.get("/productPosts/:id", function(request, response){ 
 	const id = parseInt(request.params.id)
 	db.get("SELECT * FROM ProductPost WHERE id = ?", [id], function(error, ProductPost){ 
 		if(error){
@@ -538,7 +538,7 @@ app.get("/productPosts/", function(request, response){
 // Retrieving all posts.
 // === Missing the part to sort the post by "newest first"
 app.get("/productPosts", function(request, response){
-	const query = "SELECT * FROM ProductPost ORDER BY createdAt DESC"
+	const query = "SELECT * FROM ProductPost ORDER BY postCreatedAt DESC"
 	db.all(query, function(error, ProductPost){
 		if(error){
    			response.status(500).end()
