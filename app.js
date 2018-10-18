@@ -328,6 +328,7 @@ app.put("/accounts/:id", function(request, response){
 	
 	const accountId = request.params.id
 	const receivedAccount = request.body
+	const username = request.body.username
 	const hashedPassword = request.body.hashedPassword
 	const theHash = bcrypt.hashSync(hashedPassword, saltRounds)
 	// const hashedPassword = request.body.hashedPassword
