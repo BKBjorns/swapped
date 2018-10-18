@@ -31,7 +31,8 @@ db.run(`CREATE TABLE IF NOT EXISTS ProductPost (
     category TEXT,
     content TEXT,
     postCreatedAt INTEGER,
-    accountId INTEGER
+	accountId INTEGER,
+	FOREIGN KEY(\`accountId\`) REFERENCES \`Account\`(\`id\`) ON DELETE CASCADE
 )`)
 
 
@@ -82,30 +83,32 @@ function validatePost(productPost){
 
 }
 
-function validateAccount(accountUpdate){
-	
-	var letters = /^[A-Za-z]+$/
-	const accountErrors = []
+// function validateAccount(accountUpdate){
 
-	if(accountUpdate.username.length < 3){
-		accountErrors.push("usernameIsTooShort")
-	}
 
-	if(accountUpdate.username.length > 80){
-		accountErrors.push("usernameIsTooLong")
-	}
+// 	const accountErrors = []
 
-	if(accountUpdate.hashedPassword.length < 10){
-        accountErrors.push("passwordIsTooShort")
-	}
+// 	if(accountUpdate.username.length < 3){
+// 		accountErrors.push("usernameIsTooShort")
+// 	}
 
-	if (!username.match(letters)){
-		accountErrors.push("invalidCharacters")
-	}
+// 	if(accountUpdate.username.length > 80){
+// 		accountErrors.push("usernameIsTooLong")
+// 	}
 
-	return accountErrors
+// 	if(accountUpdate.hashedPassword.length < 10){
+//         accountErrors.push("passwordIsTooShort")
+// 	}
 
-}
+// 	if (! /^[a-zA-Z0-9]+$/.test(username)) {
+//         // Validation failed.
+//         valid = false
+//         accountErrors.push("invalidCharacters")
+// 	}
+
+// 	return accountErrors
+
+// }
 
 function validateComment(commentUpdate){
 	
@@ -135,6 +138,7 @@ function validateComment(commentUpdate){
 // ===
 // Create a new Account.
 // ===
+
 const saltRounds = 10
 
 app.post("/accounts", function(request, response){
@@ -145,6 +149,15 @@ app.post("/accounts", function(request, response){
     const username = request.body.username
     const values = [email, theHash, username]
     const createdAccount = request.body
+
+	// Look for malformed resources.
+	if(typeof createdAccount != "object" ||
+	typeof createdAccount.email != "string" ||
+	typeof createdAccount.hashedPassword != "string" ||
+	typeof createdAccount.username != "string" ){
+	   response.status(422).end()
+	   return
+}
 
     var accountErrors = [] 
     if(username.length < 3){
@@ -165,17 +178,10 @@ app.post("/accounts", function(request, response){
 	if (! /^[a-zA-Z0-9]+$/.test(username)) {
         // Validation failed.
         valid = false
-        errors.push("invalidCharacters")
+        accountErrors.push("invalidCharacters")
 	}
 	
-	// Look for malformed resources. !!!!!!!!!!!!!!!!!!!!!!
-	if(typeof createdAccount != "object" ||
-	typeof createdAccount.email != "string" ||
-	typeof createdAccount.hashedPassword != "string" ||
-	typeof createdAccount.username != "string" ){
-	   response.status(422).end()
-	   return
-}
+
 
 // Look for validation errors.
 // const accountErrors = validateAccount(createdAccount)
@@ -205,47 +211,20 @@ app.post("/accounts", function(request, response){
 
 })
 
-// ===
-// Getting a new Account(s).
-// ===
-app.get("/accounts/:id", function(request, response){
-	const id = request.params.id
-	const query = "SELECT * FROM Account WHERE id = ?"
-	const values = [id]
-	db.get(query, values, function(error, email){
-		if(error){
-			response.status(500).end()
-		}else if(!email){
-			response.status(404).end()
-		}else{
-			response.status(200).json(email)
-		}
-	})
-})
-
-app.get("/accounts", function(request, response){
-	const query = "SELECT * FROM Account"
-	db.all(query, function(error, email){
-		if(error){
-			response.status(500).end()
-		}else{
-			response.status(200).json(email)
-		}
-	})
-})
-
 
 
 // ===
 // Logging into an account.
 // ===
+// In order to log in you need  grant_type=password&username=theEmail&password=thePassword
+//  and the set the Content-Type to application/x-www-form-urlencoded
 
 //Tokens
 const jwtSecret = "dsjlksdjlkjfdsl"
 
 app.post("/tokens", function(request, response){
 	
-	// const grant_type = request.body.grant_type
+	const grant_type = request.body.grant_type
 	const email = request.body.username //change this into username
 	const hashedPassword = request.body.password //password
 	
@@ -278,63 +257,31 @@ app.post("/tokens", function(request, response){
 
 
 
-app.post("/accounts", function(request, response){
-	
-	const title = request.body.title
-	const abstract = request.body.abstract
-	const accountId = request.body.accountId
-	const hashedPassword = request.body.hashedPassword
-	// const theHash = bcrypt.hashSync(hashedPassword, saltRounds)
-	const authorizationHeader = request.get("Authorization")
-	const accessToken = authorizationHeader.substr(7)
-
-	let tokenAccountId = null
-	try{
-		const payload = jwt.verify(accessToken, jwtSecret)
-		tokenAccountId = payload.accountId
-	}catch(error){
-		response.status(401).end()
-		return
-	}
-
-	if(tokenAccountId != accountId){
-		response.status(401).end()
-		return
-	}
-
-	const query = `
-		INSERT INTO Account (email, hashedPassword, username)
-		VALUES (?, ?, ?)
-	`
-	const values = [email, hashedPassword, username]
-	
-	db.run(query, values, function(error){
-		if(error){
-			response.status(500).end()
-		}else{
-			const id = this.lastID
-			response.setHeader("Location", "/accounts/"+id)
-			response.status(201).end()
-		}
-	})
-
-})
-
-
 // ===
 // Updating the account.
 // ===
-app.put("/accounts/:id", function(request, response){
+app.patch("/accounts/:id", function(request, response){
 	
 	const accountId = request.params.id
 	const receivedAccount = request.body
 	const username = request.body.username
 	const hashedPassword = request.body.hashedPassword
 	const theHash = bcrypt.hashSync(hashedPassword, saltRounds)
+	const username = request.body.username
 	// const hashedPassword = request.body.hashedPassword
 	// const accountId = request.body.accountId
 	const authorizationHeader = request.get("Authorization")
 	const accessToken = authorizationHeader.substr(7)	
+
+
+	// Look for malformed resources.
+	if(typeof receivedAccount != "object" ||
+		 typeof receivedAccount.username != "string" ||
+		 typeof receivedAccount.hashedPassword != "string" ){
+			response.status(422).end()
+			return
+	}
+
 
     let tokenAccountId = null
 	try{
@@ -350,15 +297,34 @@ app.put("/accounts/:id", function(request, response){
 		return
 	}
 
-	// Look for malformed resources.
-	if(typeof receivedAccount != "object" ||
-		 typeof receivedAccount.username != "string" ||
-		 typeof receivedAccount.hashedPassword != "string" ){
-			response.status(422).end()
-			return
-	}
+	
 
 	// Look for validation errors.
+	function validateAccount(accountUpdate){
+		const accountErrors = []
+	
+		if(accountUpdate.username.length < 3){
+			accountErrors.push("usernameIsTooShort")
+		}
+	
+		if(accountUpdate.username.length > 80){
+			accountErrors.push("usernameIsTooLong")
+		}
+	
+		if(accountUpdate.hashedPassword.length < 10){
+			accountErrors.push("passwordIsTooShort")
+		}
+	
+		if (! /^[a-zA-Z0-9]+$/.test(username)) {
+			// Validation failed.
+			valid = false
+			accountErrors.push("invalidCharacters")
+		}
+	
+		return accountErrors
+	
+	}
+
 	const accountErrors = validateAccount(receivedAccount)
 
 	if(0 < accountErrors.length){
@@ -373,7 +339,7 @@ app.put("/accounts/:id", function(request, response){
 	`
 	const values = [
 		theHash,
-		receivedAccount.username,
+		username,
 		// receievedAccount.accountId,
 		accountId
 	]
@@ -511,17 +477,19 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
         const query = "INSERT INTO ProductPost (postName, price, category, content, postCreatedAt, accountId) VALUES (?, ?, ?, ?, ?, ?)"
         db.run(query, values, function(error){
             if(error){
-                if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
-					response.status(400).json(["AccountorPostDoesNotExist"])
+				if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
+					response.status(400).json(["accountNotFound"])
                 } 
                 else {
                         response.status(500).end()
                 }
-            }else{
-                response.setHeader("Location", "/productPosts/"+this.lastID)
+    		}else {
+				response.setHeader("Location", "/productPosts/"+this.lastID)
                 response.status(201).end()
-            }
-        })
+				}
+			})
+                
+           
     } else{
         response.status(400).json(newProductError)
         return
@@ -535,7 +503,7 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
 // ===
 app.get("/productPosts/:id", function(request, response){ 
 	const id = parseInt(request.params.id)
-	db.get("SELECT * FROM ProductPost WHERE id = ?", [id], function(error, ProductPost){ 
+	db.get("SELECT * FROM ProductPost WHERE id = ? ORDER BY postCreatedAt DESC", [id], function(error, ProductPost){ 
 		if(error){
 			response.status(500).end()
 		}else if(!ProductPost){
@@ -550,7 +518,7 @@ app.get("/productPosts/:id", function(request, response){
 
 // ===
 // Retrieving all posts.
-// === Missing the part to sort the post by "newest first"
+// ===
 app.get("/productPosts", function(request, response){
 	const query = "SELECT * FROM ProductPost ORDER BY postCreatedAt DESC"
 	db.all(query, function(error, ProductPost){
@@ -568,74 +536,88 @@ app.get("/productPosts", function(request, response){
 // ===
 // Updating the post. 
 // ===
-app.put("/productPosts/:id", function(request, response){
+app.patch("/productPosts/:id", function(request, response){
 	
-	const id = request.params.id
-	const receivedPost = request.body
-	const accountId = request.body.accountId
-
+	const id = parseInt(request.params.id)
+	const accountIdPost = "SELECT accountId FROM productPost WHERE id = ?"
 	
-	const authorizationHeader = request.get("Authorization")
-	const accessToken = authorizationHeader.substr(7)	
-
-    let tokenAccountId = null
-	try{
-		const payload = jwt.verify(accessToken, jwtSecret)
-		tokenAccountId = payload.accountId
-	}catch(error){
-		response.status(401).end()
-		return
-	}
-
-	if(tokenAccountId != accountId){
-		response.status(401).end()
-		return
-	}
-
-	// Look for malformed resources.
-	if(typeof receivedPost != "object" ||
-		 typeof receivedPost.postName != "string" ||
-		 typeof receivedPost.price != "number" ||
-		 typeof receivedPost.category != "string" ||
-		 typeof receivedPost.content != "string" ||
-		 typeof receivedPost.postCreatedAt != "number" ||
-		 typeof receivedPost.accountId != "number" ){
-			response.status(422).end()
-			return
-	}
-
-	// Look for validation errors.
-	const postErrors = validatePost(receivedPost)
-
-	if(0 < postErrors.length){
-		response.status(400).json(postErrors)
-		return
-	}
-
-	// Go ahead and update the resource.
-	const query = `
-		UPDATE ProductPost SET postName = ?, price = ?, category = ?, content = ?, postCreatedAt = ?, accountId = ?
-		WHERE id = ?
-	`
-	const values = [
-		receivedPost.postName,
-		receivedPost.price,
-		receivedPost.category,
-		receivedPost.content,
-		receivedPost.postCreatedAt,
-		receivedPost.accountId,
-		id
-	]
-	
-	db.run(query, values, function(error){
+	db.get(accountIdPost,[id], function(error, post) {
 		if(error){
 			response.status(500).end()
-		}else{
-			const id = this.lastID
-			response.setHeader("Location", "/productPosts/"+ id)
-			response.status(204).end()
-		}
+		}else if(!post){
+				response.status(404).end()
+
+			}else{
+
+				// Missing the part to compare the accountId's
+				const receivedPost = request.body
+				const authorizationHeader = request.get("Authorization")
+				const accessToken = authorizationHeader.substr(7)	
+			
+				let tokenAccountId = null
+				try{
+					const payload = jwt.verify(accessToken, jwtSecret)
+					tokenAccountId = payload.accountId
+				}catch(error){
+					response.status(401).end()
+					return
+				}
+			
+				if(tokenAccountId != accountId){
+					response.status(401).end()
+					return
+				}
+			
+				// Look for malformed resources.
+				if(typeof receivedPost != "object" ||
+					 typeof receivedPost.postName != "string" ||
+					 typeof receivedPost.price != "number" ||
+					 typeof receivedPost.category != "string" ||
+					 typeof receivedPost.content != "string" ||
+					 typeof receivedPost.postCreatedAt != "number" ||
+					 typeof receivedPost.accountId != "number" ){
+						response.status(422).end()
+						return
+				}
+			
+				// Look for validation errors.
+				const postErrors = validatePost(receivedPost)
+			
+				if(0 < postErrors.length){
+					response.status(400).json(postErrors)
+					return
+				}
+			
+				// Go ahead and update the resource.
+				const query = `
+					UPDATE ProductPost SET postName = ?, price = ?, category = ?, content = ?, postCreatedAt = ?, accountId = ?
+					WHERE id = ?
+				`
+				const values = [
+					receivedPost.postName,
+					receivedPost.price,
+					receivedPost.category,
+					receivedPost.content,
+					receivedPost.postCreatedAt,
+					receivedPost.accountId,
+					id
+				]
+				
+				db.run(query, values, function(error){
+					if(error){
+						response.status(500).end()
+					}else{
+						const id = this.lastID
+						response.setHeader("Location", "/productPosts/"+ id)
+						response.status(204).end()
+					}
+				})
+
+
+			}
 	})
+	
+
 
 })
 
@@ -736,15 +718,13 @@ app.post("/comments", function(request, response){
 	}
 
 
-	// const commentErrors = validateComment(receivedComment)
-
 	if(commentErrors.length == 0){
 
         const query = "INSERT INTO Comment (accountId, postId, title, content, commentCreatedAt) VALUES (?, ?, ?, ?, ?)"
         db.run(query, values, function(error){
             if(error){
                 if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
-					response.status(400).json(["accountNotFound"])
+					response.status(400).json(["accountOrPosttNotFound"])
                 } else {
                         response.status(500).end()
                 }
@@ -880,7 +860,6 @@ app.put("/comments/:id", function(request, response){
 // Retrieving all comments for one specific post
 // http://localhost:3000/comments?postId=1
 // ===
-// We are missing the part to sort the comments by what is the newest
 
 app.get("/comments", function(request, response){
 	const postId = request.query.postId
