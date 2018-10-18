@@ -532,7 +532,7 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
 // ===
 // Retrieving single post.
 // ===
-app.get("/productPosts/", function(request, response){ 
+app.get("/productPosts/:id", function(request, response){ 
 	const id = parseInt(request.params.id)
 	db.get("SELECT * FROM ProductPost WHERE id = ?", [id], function(error, ProductPost){ 
 		if(error){
