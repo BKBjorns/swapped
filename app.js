@@ -5,7 +5,7 @@ const db = new sqlite3.Database("swapped.db")
 const bodyParser = require('body-parser')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-
+const saltRounds = 10
 
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: false}))
@@ -13,7 +13,6 @@ app.use(bodyParser.urlencoded({extended: false}))
 db.run("PRAGMA foreign_keys = ON;")
 
 // Create a table to store Accounts. 
-// Added accountId to all three tables, checkes if the right person is creating the post/comment.
 db.run(`CREATE TABLE IF NOT EXISTS Account (
     id integer PRIMARY KEY AUTOINCREMENT,
     email TEXT unique,
@@ -23,62 +22,37 @@ db.run(`CREATE TABLE IF NOT EXISTS Account (
 
 
 // Create a table to store Product posts.
-// postName should be title and postCreatedAt-createdAt
 db.run(`CREATE TABLE IF NOT EXISTS ProductPost (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    postName TEXT NOT NULL,
+    title TEXT NOT NULL,
     price INTEGER,
     category TEXT,
     content TEXT,
-    postCreatedAt INTEGER,
+    createdAt INTEGER,
 	accountId INTEGER,
 	FOREIGN KEY(\`accountId\`) REFERENCES \`Account\`(\`id\`) ON DELETE CASCADE
 )`)
 
 
-// Create a table to store Comment.
+// Create a table to store Comments.
 db.run(`CREATE TABLE IF NOT EXISTS Comment (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     accountId INTEGER,
     postId INTEGER,
     title TEXT,
     content TEXT,
-    commentCreatedAt INTEGER,
+    createdAt INTEGER,
     FOREIGN KEY(\`accountId\`) REFERENCES \`Account\`(\`id\`) ON DELETE CASCADE,
     FOREIGN KEY(\`postId\`) REFERENCES \`ProductPost\`(\`id\`) ON DELETE CASCADE
 )`)
-
-
-function validateComment(commentUpdate){
-	
-	const commentErrors = []
-
-	if(commentUpdate.title.length < 5){
-		commentErrors.push("titleTooShort")
-	}
-
-	if(commentUpdate.title.length > 50){
-		commentErrors.push("titleTooLong")
-	}
-
-	if(commentUpdate.content.length < 10){
-		commentErrors.push("contentTooShort")
-	}
-
-	if(commentUpdate.content.length > 1000){
-		commentErrors.push("contentTooLong")
-	}
-
-	return commentErrors
-
-}
 
 
 // ===
 // Create a new Account.
 // ===
 
-const saltRounds = 10
+// POST /accounts
+// Content-Type: application/json
 
 app.post("/accounts", function(request, response){
 
@@ -115,15 +89,9 @@ app.post("/accounts", function(request, response){
 	}
 
 	if (! /^[a-zA-Z0-9]+$/.test(username)) {
-        // Validation failed.
         valid = false
         accountErrors.push("invalidCharacters")
 	}
-	
-
-
-// Look for validation errors.
-// const accountErrors = validateAccount(createdAccount)
 
     if(accountErrors.length == 0) { 
         const query = `
@@ -155,17 +123,18 @@ app.post("/accounts", function(request, response){
 // ===
 // Logging into an account.
 // ===
-// In order to log in you need  grant_type=password&username=theEmail&password=thePassword
-//  and the set the Content-Type to application/x-www-form-urlencoded
 
-//Tokens
+// POST /tokens
+// Content-Type: application/x-www-form-urlencoded
+// Body: grant_type=password&username=theEmail&password=thePassword
+
 const jwtSecret = "dsjlksdjlkjfdsl"
 
 app.post("/tokens", function(request, response){
 	
 	const grant_type = request.body.grant_type
-	const email = request.body.username //change this into username
-	const hashedPassword = request.body.password //password
+	const email = request.body.username 
+	const hashedPassword = request.body.password 
 	
 	const query = `SELECT * FROM Account WHERE email = ?`
 	const values = [email]
@@ -179,7 +148,7 @@ app.post("/tokens", function(request, response){
 			if(bcrypt.compareSync(hashedPassword, account.hashedPassword)){
 
 				const accessToken = jwt.sign({accountId: account.id}, jwtSecret)
-				const idToken = jwt.sign({sub: account.id, preferred_email: email}, jwtSecret)
+				const idToken = jwt.sign({sub: account.id, email: email}, jwtSecret)
 				response.status(200).json({
 					access_token: accessToken,
 					token_type: "Bearer",
@@ -199,6 +168,11 @@ app.post("/tokens", function(request, response){
 // ===
 // Updating the account.
 // ===
+
+// PATCH /accounts/id
+// Content-Type: application/json
+// Authorization: Bearer theAccessToken
+
 app.patch("/accounts/:id", function(request, response){
 	
 	const accountId = request.params.id
@@ -206,8 +180,6 @@ app.patch("/accounts/:id", function(request, response){
 	const hashedPassword = request.body.hashedPassword
 	const theHash = bcrypt.hashSync(hashedPassword, saltRounds)
 	const username = request.body.username
-	// const hashedPassword = request.body.hashedPassword
-	// const accountId = request.body.accountId
 	const authorizationHeader = request.get("Authorization")
 	const accessToken = authorizationHeader.substr(7)	
 
@@ -235,15 +207,30 @@ app.patch("/accounts/:id", function(request, response){
 		return
 	}
 
-
-	const accountErrors = validateAccount(receivedAccount)
+	const accountErrors = []
+	
+		if(receivedAccount.username.length < 3){
+			accountErrors.push("usernameIsTooShort")
+		}
+	
+		if(receivedAccount.username.length > 80){
+			accountErrors.push("usernameIsTooLong")
+		}
+	
+		if(receivedAccount.hashedPassword.length < 10){
+	        accountErrors.push("passwordIsTooShort")
+		}
+	
+		if (! /^[a-zA-Z0-9]+$/.test(username)) {
+	        valid = false
+	        accountErrors.push("invalidCharacters")
+		}
 
 	if(0 < accountErrors.length){
 		response.status(400).json(accountErrors)
 		return
 	}
 
-	// Go ahead and update the resource.
 	const query = `
 		UPDATE Account SET hashedPassword = ?, username = ?
 		WHERE id = ?
@@ -251,7 +238,6 @@ app.patch("/accounts/:id", function(request, response){
 	const values = [
 		theHash,
 		username,
-		// receievedAccount.accountId,
 		accountId
 	]
 	db.run(query, values, function(error){
@@ -270,11 +256,12 @@ app.patch("/accounts/:id", function(request, response){
 // Deleting the Account.
 // ===
 
+// DELETE/accounts/id
+// Content-Type: application/json
+// Authorization: Bearer theAccessToken
+
 app.delete("/accounts/:id", function(request, response){
-	
-		// const id = request.params.id
-		// const receivedPost = request.body
-		//const accountId = request.body.accountId
+
 		const id = parseInt(request.params.id)
 		const authorizationHeader = request.get("Authorization")
 		const accessToken = authorizationHeader.substr(7)	
@@ -313,17 +300,20 @@ app.delete("/accounts/:id", function(request, response){
 // Create a new Product post.
 // ===
 
-app.post("/productPosts", function(request, response){ //Changed the ProductPost to Posts so its coherent with other endings (accounts and comments).
-    const postName = request.body.postName				//Need to update the second part of the report.
+// POST /productPosts/id
+// Content-Type: application/json
+// Authorization: Bearer theAccessToken
+
+app.post("/productPosts", function(request, response){ 
+	
+    const title = request.body.title			
     const price = request.body.price
     const category = request.body.category
     const content = request.body.content
-    const postCreatedAt = request.body.postCreatedAt
+    const createdAt = request.body.createdAt
     const accountId = request.body.accountId
-	
-	const values = [postName, price, category, content, postCreatedAt, accountId]
+	const values = [title, price, category, content, createdAt, accountId]
 	const createdPost = request.body
-   
     const authorizationHeader = request.get("Authorization")
 	const accessToken = authorizationHeader.substr(7)	
 
@@ -341,28 +331,25 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
 		return
 	}
 
-
 	// Look for malformed resources.
 	if(typeof createdPost != "object" ||
-	typeof createdPost.postName != "string" ||
+	typeof createdPost.title != "string" ||
 	typeof createdPost.price != "number" ||
 	typeof createdPost.category != "string" ||
 	typeof createdPost.content != "string" ||
-	typeof createdPost.postCreatedAt != "number" ||
+	typeof createdPost.createdAt != "number" ||
 	typeof createdPost.accountId != "number" ){
 	   response.status(422).end()
 	   return
 }
 
-
     var newProductError = []
 
-    
-    if(postName.length < 3){
+    if(title.length < 3){
         newProductError.push("titleTooShort")
     }
     
-    if (postName.length > 50){
+    if (title.length > 50){
         newProductError.push("titleTooLong")
     }
 
@@ -385,7 +372,7 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
 
     if(newProductError.length == 0){
 
-        const query = "INSERT INTO ProductPost (postName, price, category, content, postCreatedAt, accountId) VALUES (?, ?, ?, ?, ?, ?)"
+        const query = "INSERT INTO ProductPost (title, price, category, content, createdAt, accountId) VALUES (?, ?, ?, ?, ?, ?)"
         db.run(query, values, function(error){
             if(error){
 				if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
@@ -412,9 +399,13 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
 // ===
 // Retrieving single post.
 // ===
+
+// GET /productPosts/id
+// Content-Type: application/json
+
 app.get("/productPosts/:id", function(request, response){ 
 	const id = parseInt(request.params.id)
-	db.get("SELECT * FROM ProductPost WHERE id = ? ORDER BY postCreatedAt DESC", [id], function(error, ProductPost){ 
+	db.get("SELECT * FROM ProductPost WHERE id = ? ORDER BY createdAt DESC", [id], function(error, ProductPost){ 
 		if(error){
 			response.status(500).end()
 		}else if(!ProductPost){
@@ -430,8 +421,12 @@ app.get("/productPosts/:id", function(request, response){
 // ===
 // Retrieving all posts.
 // ===
+
+// GET /productPosts
+// Content-Type: application/json
+
 app.get("/productPosts", function(request, response){
-	const query = "SELECT * FROM ProductPost ORDER BY postCreatedAt DESC"
+	const query = "SELECT * FROM ProductPost ORDER BY createdAt DESC"
 	db.all(query, function(error, ProductPost){
 		if(error){
    			response.status(500).end()
@@ -447,6 +442,11 @@ app.get("/productPosts", function(request, response){
 // ===
 // Updating the post. 
 // ===
+
+// PATCH /productPosts/id
+// Content-Type: application/json
+// Authorization: Bearer theAccessToken
+
 app.patch("/productPosts/:id", function(request, response){
 	
 	const id = parseInt(request.params.id)
@@ -474,17 +474,10 @@ app.patch("/productPosts/:id", function(request, response){
 					return
 				}
 
-
-
 				if(tokenAccountId != post.accountId){
 					response.status(401).end()
 					return
 				}
-			
-				
-
-
-				// Checking if the user has change the values, if it is malformed and validates it.
 				
 				if(typeof receivedPost != "object"){
 					response.status(422).end()
@@ -493,14 +486,14 @@ app.patch("/productPosts/:id", function(request, response){
 
 				const postErrors = []
 
-				if(receivedPost.postName && typeof receivedPost.postName == "string"){
-					post.postName = receivedPost.postName
+				if(receivedPost.title && typeof receivedPost.title == "string"){
+					post.title = receivedPost.title
 
-					if(post.postName.length < 3){
+					if(post.title.length < 3){
 						postErrors.push("titleTooShort ")
 					}
 
-					if(post.postName.length > 50){
+					if(post.title.length > 50){
 						postErrors.push("titleTooLong ")
 					}
 				}
@@ -533,8 +526,8 @@ app.patch("/productPosts/:id", function(request, response){
 					}
 				}
 
-				if(receivedPost.postCreatedAt && typeof receivedPost.postCreatedAt == "number"){
-					post.postCreatedAt = receivedPost.postCreatedAt
+				if(receivedPost.createdAt && typeof receivedPost.createdAt == "number"){
+					post.createdAt = receivedPost.createdAt
 				}
 
 				if(receivedPost.accountId){
@@ -547,18 +540,17 @@ app.patch("/productPosts/:id", function(request, response){
 					response.status(400).json(postErrors)
 					return
 				}
-			
-				// Go ahead and update the resource.
+
 				const query = `
-					UPDATE ProductPost SET postName = ?, price = ?, category = ?, content = ?, postCreatedAt = ?, accountId = ?
+					UPDATE ProductPost SET title = ?, price = ?, category = ?, content = ?, createdAt = ?, accountId = ?
 					WHERE id = ?
 				`
 				const values = [
-					post.postName,
+					post.title,
 					post.price,
 					post.category,
 					post.content,
-					post.postCreatedAt,
+					post.createdAt,
 					post.accountId,
 					id
 				]
@@ -581,12 +573,12 @@ app.patch("/productPosts/:id", function(request, response){
 // Deleting the post. 
 // ===
 
-// Allow clients to delete a post with a specific id, e.g.:
-// DELETE /ProductPosts/123
+// DELETE /productPosts/id
+// Content-Type: application/json
+// Authorization: Bearer theAccessToken
+
 app.delete("/productPosts/:id", function(request, response){
-	// const id = request.params.id
-	// const receivedPost = request.body
-	// const accountId = request.body.accountId
+
 	const id = parseInt(request.params.id)
 	const authorizationHeader = request.get("Authorization")
 	const accessToken = authorizationHeader.substr(7)	
@@ -599,11 +591,6 @@ app.delete("/productPosts/:id", function(request, response){
 		response.status(401).end()
 		return
 	}
-
-	// if(tokenAccountId != accountId){
-	// 	response.status(401).end()
-	// 	return
-	// }
 
 	db.run("DELETE FROM ProductPost WHERE id = ? AND accountId = ?", [id, tokenAccountId], function(error){
 		if(error){
@@ -625,16 +612,19 @@ app.delete("/productPosts/:id", function(request, response){
 // Creating new comment
 // ===
 
+// POST /comments
+// Content-Type: application/json
+// Authorization: Bearer theAccessToken
+
 app.post("/comments", function(request, response){ 
-	const createdComment = request.body
 	
+	const createdComment = request.body
 	const accountId = request.body.accountId
 	const postId = request.body.postId
     const title = request.body.title
     const content = request.body.content
-	const commentCreatedAt = request.body.commentCreatedAt
-
-	const values = [accountId, postId, title, content, commentCreatedAt]
+	const createdAt = request.body.createdAt
+	const values = [accountId, postId, title, content, createdAt]
 
    
     const authorizationHeader = request.get("Authorization")
@@ -660,11 +650,10 @@ app.post("/comments", function(request, response){
 		typeof createdComment.postId != "number" ||
 		typeof createdComment.title != "string" ||
 		typeof createdComment.content != "string" ||
-		typeof createdComment.commentCreatedAt != "number" ){
+		typeof createdComment.createdAt != "number" ){
 			response.status(422).end()
 			return
 	}
-
 
 	const commentErrors = []
 
@@ -686,7 +675,7 @@ app.post("/comments", function(request, response){
 
 	if(commentErrors.length == 0){
 
-        const query = "INSERT INTO Comment (accountId, postId, title, content, commentCreatedAt) VALUES (?, ?, ?, ?, ?)"
+        const query = "INSERT INTO Comment (accountId, postId, title, content, createdAt) VALUES (?, ?, ?, ?, ?)"
         db.run(query, values, function(error){
             if(error){
                 if(error.message == "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"){
@@ -712,9 +701,12 @@ app.post("/comments", function(request, response){
 // Deleting a comment. 
 // ===
 
+// DELETE /comments/id
+// Content-Type: application/json
+// Authorization: Bearer theAccessToken
+
 app.delete("/comments/:id", function(request, response){
 
-	// const accountId = request.body.accountId
 	const id = parseInt(request.params.id)
 	const authorizationHeader = request.get("Authorization")
 	const accessToken = authorizationHeader.substr(7)	
@@ -728,12 +720,6 @@ app.delete("/comments/:id", function(request, response){
 		response.status(401).end()
 		return
 	}
-
-	// if(tokenAccountId != accountId){
-	// 	response.status(401).end()
-	// 	return
-	// }
-	
 
 	db.run("DELETE FROM Comment WHERE id = ? AND accountId = ?", [id, tokenAccountId], function(error){
 		if(error){
@@ -754,14 +740,16 @@ app.delete("/comments/:id", function(request, response){
 // ====
 // Updating specific comment. 
 // ===
+
+// PATCH /comments/id
+// Content-Type: application/json
+// Authorization: Bearer theAccessToken
+
 app.patch("/comments/:id", function(request, response){
 	
-
 	const id = parseInt(request.params.id)
 	const oldComment = "SELECT * FROM Comment WHERE id = ?"
-
 	const receivedComment = request.body
-	// const accountId = request.body.accountId
 
 
 	db.get(oldComment,[id], function(error, comment){
@@ -831,10 +819,8 @@ app.patch("/comments/:id", function(request, response){
 					return
 				}
 
-		
-			// Go ahead and update the comment.
 			const query = `
-				UPDATE Comment SET accountId = ?, postId = ?, title = ?, content = ?, commentCreatedAt = ?
+				UPDATE Comment SET accountId = ?, postId = ?, title = ?, content = ?, createdAt = ?
 				WHERE id = ?
 			`
 			const values = [
@@ -842,7 +828,7 @@ app.patch("/comments/:id", function(request, response){
 				comment.postId,
 				comment.title,
 				comment.content,
-				comment.commentCreatedAt,
+				comment.createdAt,
 				id
 			]
 		
@@ -864,9 +850,12 @@ app.patch("/comments/:id", function(request, response){
 })
 
 // ====
-// Retrieving all comments for one specific post
-// http://localhost:3000/comments?postId=1
+// Retrieving all comments for one specific post. 
 // ===
+
+// GET /comments?postId=1
+// Content-Type: application/json
+// Authorization: Bearer theAccessToken
 
 app.get("/comments", function(request, response){
 	const postId = request.query.postId
@@ -882,7 +871,6 @@ app.get("/comments", function(request, response){
 				} 	
 			})
 })
-
 
 
 app.listen(3000)
