@@ -853,7 +853,7 @@ app.patch("/comments/:id", function(request, response){
 // Retrieving all comments for one specific post. 
 // ===
 
-// GET /comments?postId=1
+// GET /comments?commentsId=1
 // Content-Type: application/json
 // Authorization: Bearer theAccessToken
 
