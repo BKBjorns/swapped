@@ -968,7 +968,7 @@ app.patch("/comments/:id", function(request, response){
 
 })
 
-// ===
+// ====
 // Retrieving all comments for one specific post
 // http://localhost:3000/comments?postId=1
 // ===
