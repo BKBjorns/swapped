@@ -274,8 +274,8 @@ app.delete("/accounts/:id", function(request, response){
 	
 		// const id = request.params.id
 		// const receivedPost = request.body
-		const accountId = request.body.accountId
-		
+		//const accountId = request.body.accountId
+		const id = parseInt(request.params.id)
 		const authorizationHeader = request.get("Authorization")
 		const accessToken = authorizationHeader.substr(7)	
 	
@@ -288,12 +288,11 @@ app.delete("/accounts/:id", function(request, response){
 			return
 		}
 	
-		if(tokenAccountId != accountId){
+		if(tokenAccountId != id){
 			response.status(401).end()
 			return
 		}
 	
-		const id = parseInt(request.params.id)
 		db.run("DELETE FROM Account WHERE id = ?", [id], function(error){
 			if(error){
 				response.status(500).end()
@@ -585,11 +584,10 @@ app.patch("/productPosts/:id", function(request, response){
 // Allow clients to delete a post with a specific id, e.g.:
 // DELETE /ProductPosts/123
 app.delete("/productPosts/:id", function(request, response){
-
 	// const id = request.params.id
 	// const receivedPost = request.body
-	const accountId = request.body.accountId
-	
+	// const accountId = request.body.accountId
+	const id = parseInt(request.params.id)
 	const authorizationHeader = request.get("Authorization")
 	const accessToken = authorizationHeader.substr(7)	
 
@@ -602,13 +600,12 @@ app.delete("/productPosts/:id", function(request, response){
 		return
 	}
 
-	if(tokenAccountId != accountId){
-		response.status(401).end()
-		return
-	}
+	// if(tokenAccountId != accountId){
+	// 	response.status(401).end()
+	// 	return
+	// }
 
-	const id = parseInt(request.params.id)
-	db.run("DELETE FROM ProductPost WHERE id = ?", [id], function(error){
+	db.run("DELETE FROM ProductPost WHERE id = ? AND accountId = ?", [id, tokenAccountId], function(error){
 		if(error){
 			response.status(500).end()
 		}else{
@@ -717,8 +714,8 @@ app.post("/comments", function(request, response){
 
 app.delete("/comments/:id", function(request, response){
 
-	const accountId = request.body.accountId
-	
+	// const accountId = request.body.accountId
+	const id = parseInt(request.params.id)
 	const authorizationHeader = request.get("Authorization")
 	const accessToken = authorizationHeader.substr(7)	
 
@@ -732,14 +729,13 @@ app.delete("/comments/:id", function(request, response){
 		return
 	}
 
-	if(tokenAccountId != accountId){
-		response.status(401).end()
-		return
-	}
+	// if(tokenAccountId != accountId){
+	// 	response.status(401).end()
+	// 	return
+	// }
 	
 
-	const id = parseInt(request.params.id)
-	db.run("DELETE FROM Comment WHERE id = ?", [id], function(error){
+	db.run("DELETE FROM Comment WHERE id = ? AND accountId = ?", [id, tokenAccountId], function(error){
 		if(error){
 			response.status(500).end()
 		}else{
@@ -886,11 +882,6 @@ app.get("/comments", function(request, response){
 				} 	
 			})
 })
-
-
-
-
-
 
 
 
