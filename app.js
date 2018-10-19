@@ -48,40 +48,40 @@ db.run(`CREATE TABLE IF NOT EXISTS Comment (
     FOREIGN KEY(\`postId\`) REFERENCES \`ProductPost\`(\`id\`) ON DELETE CASCADE
 )`)
 
-// Function used to validate a ProductPost resource.
-// Returns an array with error codes.
-// need to update the code with correct error codes everywhere
-function validatePost(productPost){
+// // Function used to validate a ProductPost resource.
+// // Returns an array with error codes.
+// // need to update the code with correct error codes everywhere
+// function validatePost(productPost){
 	
-	const postErrors = []
+// 	const postErrors = []
 
-	if(productPost.postName.length < 3){
-		postErrors.push("titleTooShort ")
-	}
+// 	if(productPost.postName.length < 3){
+// 		postErrors.push("titleTooShort ")
+// 	}
 
-	if(productPost.postName.length > 50){
-		postErrors.push("titleTooLong ")
-	}
+// 	if(productPost.postName.length > 50){
+// 		postErrors.push("titleTooLong ")
+// 	}
 
-	if(productPost.price < 0){
-		postErrors.push("priceNegative")
-	}
+// 	if(productPost.price < 0){
+// 		postErrors.push("priceNegative")
+// 	}
 
-	if(productPost.content.length < 10){
-		postErrors.push("contentTooShort ")
-	}
+// 	if(productPost.content.length < 10){
+// 		postErrors.push("contentTooShort ")
+// 	}
 
-	if(productPost.content.length > 1000){
-		postErrors.push("contentTooLong ")
-	}
+// 	if(productPost.content.length > 1000){
+// 		postErrors.push("contentTooLong ")
+// 	}
 
-	if (productPost.category != "Furniture" && productPost.category != "Clothes" && productPost.category != "Technology" && productPost.category != "Books" && productPost.category != "Other" ){
-		postErrors.push("wrongCategory")
-}
+// 	if (productPost.category != "Furniture" && productPost.category != "Clothes" && productPost.category != "Technology" && productPost.category != "Books" && productPost.category != "Other" ){
+// 		postErrors.push("wrongCategory")
+// }
 
-	return postErrors
+// 	return postErrors
 
-}
+// }
 
 // function validateAccount(accountUpdate){
 
@@ -264,7 +264,6 @@ app.patch("/accounts/:id", function(request, response){
 	
 	const accountId = request.params.id
 	const receivedAccount = request.body
-	const username = request.body.username
 	const hashedPassword = request.body.hashedPassword
 	const theHash = bcrypt.hashSync(hashedPassword, saltRounds)
 	const username = request.body.username
@@ -410,6 +409,7 @@ app.post("/productPosts", function(request, response){ //Changed the ProductPost
     const content = request.body.content
     const postCreatedAt = request.body.postCreatedAt
     const accountId = request.body.accountId
+	
 	const values = [postName, price, category, content, postCreatedAt, accountId]
 	const createdPost = request.body
    
@@ -539,7 +539,7 @@ app.get("/productPosts", function(request, response){
 app.patch("/productPosts/:id", function(request, response){
 	
 	const id = parseInt(request.params.id)
-	const accountIdPost = "SELECT accountId FROM productPost WHERE id = ?"
+	const accountIdPost = "SELECT * FROM productPost WHERE id = ?"
 	
 	db.get(accountIdPost,[id], function(error, post) {
 		if(error){
@@ -549,12 +549,12 @@ app.patch("/productPosts/:id", function(request, response){
 
 			}else{
 
-				// Missing the part to compare the accountId's
 				const receivedPost = request.body
 				const authorizationHeader = request.get("Authorization")
 				const accessToken = authorizationHeader.substr(7)	
 			
 				let tokenAccountId = null
+
 				try{
 					const payload = jwt.verify(accessToken, jwtSecret)
 					tokenAccountId = payload.accountId
@@ -562,32 +562,73 @@ app.patch("/productPosts/:id", function(request, response){
 					response.status(401).end()
 					return
 				}
-			
-				if(tokenAccountId != accountId){
-					response.status(401).end()
-					return
-				}
-				// Just added this!! Don't know if it works.
-				if(tokenAccountId != accountIdPost){
+
+
+
+				if(tokenAccountId != post.accountId){
 					response.status(401).end()
 					return
 				}
 			
 				// Look for malformed resources.
-				if(typeof receivedPost != "object" ||
-					 typeof receivedPost.postName != "string" ||
-					 typeof receivedPost.price != "number" ||
-					 typeof receivedPost.category != "string" ||
-					 typeof receivedPost.content != "string" ||
-					 typeof receivedPost.postCreatedAt != "number" ||
-					 typeof receivedPost.accountId != "number" ){
+				if(typeof receivedPost != "object"){
 						response.status(422).end()
 						return
 				}
+
+				// Checking if the user has change the values, if we have something in the body,
+				// and then we check if that is on the right format.
+				const postErrors = []
+
+				if(receivedPost.postName && typeof receivedPost.postName == "string"){
+					post.postName = receivedPost.postName
+
+					if(post.postName.length < 3){
+						postErrors.push("titleTooShort ")
+					}
+
+					if(post.postName.length > 50){
+						postErrors.push("titleTooLong ")
+					}
+				}
+
+				if(receivedPost.price && typeof receivedPost.price == "number"){
+					post.price = receivedPost.price
+
+					if(post.price < 0){
+						postErrors.push("priceNegative")
+					}
+
+				}
+				if(receivedPost.category && typeof receivedPost.category == "string"){
+					post.category = receivedPost.category
+
+					if (post.category != "Furniture" && post.category != "Clothes" && post.category != "Technology" && post.category != "Books" && post.category != "Other" ){
+						postErrors.push("wrongCategory")
+					}
+				}
+
+				if(receivedPost.content && typeof receivedPost.content == "number"){
+					post.content = receivedPost.content
+
+					if(post.content.length < 10){
+						postErrors.push("contentTooShort ")
+					}
+
+					if(post.content.length > 1000){
+						postErrors.push("contentTooLong ")
+					}
+				}
+
+				if(receivedPost.postCreatedAt && typeof receivedPost.postCreatedAt == "number"){
+					post.postCreatedAt = receivedPost.postCreatedAt
+				}
+
+				if(receivedPost.accountId){
+					response.status(401).end()
+				}
 			
-				// Look for validation errors.
-				const postErrors = validatePost(receivedPost)
-			
+				
 				if(0 < postErrors.length){
 					response.status(400).json(postErrors)
 					return
@@ -599,12 +640,12 @@ app.patch("/productPosts/:id", function(request, response){
 					WHERE id = ?
 				`
 				const values = [
-					receivedPost.postName,
-					receivedPost.price,
-					receivedPost.category,
-					receivedPost.content,
-					receivedPost.postCreatedAt,
-					receivedPost.accountId,
+					post.postName,
+					post.price,
+					post.category,
+					post.content,
+					post.postCreatedAt,
+					post.accountId,
 					id
 				]
 				
@@ -618,12 +659,8 @@ app.patch("/productPosts/:id", function(request, response){
 					}
 				})
 
-
 			}
 	})
-	
-
-
 })
 
 
