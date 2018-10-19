@@ -299,30 +299,30 @@ app.patch("/accounts/:id", function(request, response){
 	
 
 	// Look for validation errors.
-	function validateAccount(accountUpdate){
-		const accountErrors = []
+	// function validateAccount(accountUpdate){
+	// 	const accountErrors = []
 	
-		if(accountUpdate.username.length < 3){
-			accountErrors.push("usernameIsTooShort")
-		}
+	// 	if(accountUpdate.username.length < 3){
+	// 		accountErrors.push("usernameIsTooShort")
+	// 	}
 	
-		if(accountUpdate.username.length > 80){
-			accountErrors.push("usernameIsTooLong")
-		}
+	// 	if(accountUpdate.username.length > 80){
+	// 		accountErrors.push("usernameIsTooLong")
+	// 	}
 	
-		if(accountUpdate.hashedPassword.length < 10){
-			accountErrors.push("passwordIsTooShort")
-		}
+	// 	if(accountUpdate.hashedPassword.length < 10){
+	// 		accountErrors.push("passwordIsTooShort")
+	// 	}
 	
-		if (! /^[a-zA-Z0-9]+$/.test(username)) {
-			// Validation failed.
-			valid = false
-			accountErrors.push("invalidCharacters")
-		}
+	// 	if (! /^[a-zA-Z0-9]+$/.test(username)) {
+	// 		// Validation failed.
+	// 		valid = false
+	// 		accountErrors.push("invalidCharacters")
+	// 	}
 	
-		return accountErrors
+	// 	return accountErrors
 	
-	}
+	// }
 
 	const accountErrors = validateAccount(receivedAccount)
 
@@ -570,14 +570,16 @@ app.patch("/productPosts/:id", function(request, response){
 					return
 				}
 			
-				// Look for malformed resources.
+				
+
+
+				// Checking if the user has change the values, if it is malformed and validates it.
+				
 				if(typeof receivedPost != "object"){
-						response.status(422).end()
-						return
+					response.status(422).end()
+					return
 				}
 
-				// Checking if the user has change the values, if we have something in the body,
-				// and then we check if that is on the right format.
 				const postErrors = []
 
 				if(receivedPost.postName && typeof receivedPost.postName == "string"){
@@ -598,8 +600,8 @@ app.patch("/productPosts/:id", function(request, response){
 					if(post.price < 0){
 						postErrors.push("priceNegative")
 					}
-
 				}
+
 				if(receivedPost.category && typeof receivedPost.category == "string"){
 					post.category = receivedPost.category
 
@@ -626,6 +628,7 @@ app.patch("/productPosts/:id", function(request, response){
 
 				if(receivedPost.accountId){
 					response.status(401).end()
+					return
 				}
 			
 				
@@ -653,7 +656,6 @@ app.patch("/productPosts/:id", function(request, response){
 					if(error){
 						response.status(500).end()
 					}else{
-						const id = this.lastID
 						response.setHeader("Location", "/productPosts/"+ id)
 						response.status(204).end()
 					}
@@ -715,6 +717,8 @@ app.delete("/productPosts/:id", function(request, response){
 // ===
 
 app.post("/comments", function(request, response){ 
+	const createdComment = request.body
+	
 	const accountId = request.body.accountId
 	const postId = request.body.postId
     const title = request.body.title
@@ -739,6 +743,17 @@ app.post("/comments", function(request, response){
 	if(tokenAccountId != accountId){
 		response.status(401).end()
 		return
+	}
+
+	// Look for malformed resources.
+	if(typeof createdComment != "object" ||
+		typeof createdComment.accountId != "number" ||
+		typeof createdComment.postId != "number" ||
+		typeof createdComment.title != "string" ||
+		typeof createdComment.content != "string" ||
+		typeof createdComment.commentCreatedAt != "number" ){
+			response.status(422).end()
+			return
 	}
 
 
@@ -809,6 +824,7 @@ app.delete("/comments/:id", function(request, response){
 		response.status(401).end()
 		return
 	}
+	
 
 	const id = parseInt(request.params.id)
 	db.run("DELETE FROM Comment WHERE id = ?", [id], function(error){
@@ -830,69 +846,123 @@ app.delete("/comments/:id", function(request, response){
 // ===
 // Updating specific comment. 
 // ===
-app.put("/comments/:id", function(request, response){
+app.patch("/comments/:id", function(request, response){
 	
-	const id = request.params.id
+
+	const id = parseInt(request.params.id)
+	const oldComment = "SELECT * FROM Comment WHERE id = ?"
+
 	const receivedComment = request.body
-	const accountId = request.body.accountId
-	
-	const authorizationHeader = request.get("Authorization")
-	const accessToken = authorizationHeader.substr(7)	
+	// const accountId = request.body.accountId
 
-    let tokenAccountId = null
-	try{
-		const payload = jwt.verify(accessToken, jwtSecret)
-		tokenAccountId = payload.accountId
-	}catch(error){
-		response.status(401).end()
-		return
-	}
 
-	if(tokenAccountId != accountId){
-		response.status(401).end()
-		return
-	}
-
-	// Look for malformed resources.
-	if(typeof receivedComment != "object" ||
-		typeof receivedComment.accountId != "number" ||
-		typeof receivedComment.postId != "number" ||
-		typeof receivedComment.title != "string" ||
-		typeof receivedComment.content != "string" ||
-		typeof receivedComment.commentCreatedAt != "number" ){
-			response.status(422).end()
-			return
-	}
-
-	// Look for validation errors.
-	const commentErrors = validateComment(receivedComment)
-
-	if(0 < commentErrors.length){
-		response.status(400).json(commentErrors)
-		return
-	}
-
-	// Go ahead and update the comment.
-	const query = `
-		UPDATE Comment SET accountId = ?, postId = ?, title = ?, content = ?, commentCreatedAt = ?
-		WHERE id = ?
-	`
-	const values = [
-		receivedComment.accountId,
-		receivedComment.postId,
-		receivedComment.title,
-		receivedComment.content,
-		receivedComment.commentCreatedAt,
-		id
-	]
-
-	db.run(query, values, function(error){
+	db.get(oldComment,[id], function(error, comment){
 		if(error){
-			response.status(500).end()
+			response.status(500).end(
+			)
+		}else if(!comment){
+			response.status(404).end()
 		}else{
-			const id = this.lastID
-			response.setHeader("Location", "/comments/"+ id)
-			response.status(204).end()
+
+			const authorizationHeader = request.get("Authorization")
+			const accessToken = authorizationHeader.substr(7)	
+		
+			let tokenAccountId = null
+			try{
+				const payload = jwt.verify(accessToken, jwtSecret)
+				tokenAccountId = payload.accountId
+			}catch(error){
+				response.status(401).end()
+				return
+			}
+		
+
+			if(tokenAccountId != comment.accountId){
+				response.status(401).end()
+				return
+			}
+		
+			// // Look for malformed resources.
+			// if(typeof receivedComment != "object" ||
+			// 	typeof receivedComment.accountId != "number" ||
+			// 	typeof receivedComment.postId != "number" ||
+			// 	typeof receivedComment.title != "string" ||
+			// 	typeof receivedComment.content != "string" ||
+			// 	typeof receivedComment.commentCreatedAt != "number" ){
+			// 		response.status(422).end()
+			// 		return
+			// }
+
+				// Checking if the user has change the values, if it is malformed and validates it.
+				
+			if(typeof receivedComment != "object"){
+					response.status(422).end()
+					return
+			}
+
+				const commentErrors = []
+
+				if(receivedComment.title && typeof receivedComment.title == "string"){
+					comment.title = receivedComment.title
+
+					if(comment.title.length < 5){
+						commentErrors.push("titleTooShort ")
+					}
+
+					if(commentErrors.length > 50){
+						commentErrors.push("titleTooLong ")
+					}
+				}
+				if(receivedComment.content && typeof receivedComment.content == "string"){
+					comment.content = receivedComment.content
+
+					if(comment.content.length < 10){
+						commentErrors.push("contentTooShort ")
+					}
+
+					if(comment.content.length > 1000){
+						commentErrors.push("contentTooLong ")
+					}
+				}
+
+				if(receivedComment.accountId || receivedComment.postId ){
+					response.status(401).end()
+					return
+				}
+			
+				
+				if(0 < commentErrors.length){
+					response.status(400).json(commentErrors)
+					return
+				}
+
+		
+			// Go ahead and update the comment.
+			const query = `
+				UPDATE Comment SET accountId = ?, postId = ?, title = ?, content = ?, commentCreatedAt = ?
+				WHERE id = ?
+			`
+			const values = [
+				comment.accountId,
+				comment.postId,
+				comment.title,
+				comment.content,
+				comment.commentCreatedAt,
+				id
+			]
+		
+			db.run(query, values, function(error){
+				if(error){
+					response.status(500).end()
+				}else{
+					const id = this.lastID
+					response.setHeader("Location", "/comments/"+ id)
+					response.status(204).end()
+				}
+			})
+
+
+
 		}
 	})
 
