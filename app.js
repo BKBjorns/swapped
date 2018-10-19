@@ -48,67 +48,6 @@ db.run(`CREATE TABLE IF NOT EXISTS Comment (
     FOREIGN KEY(\`postId\`) REFERENCES \`ProductPost\`(\`id\`) ON DELETE CASCADE
 )`)
 
-// // Function used to validate a ProductPost resource.
-// // Returns an array with error codes.
-// // need to update the code with correct error codes everywhere
-// function validatePost(productPost){
-	
-// 	const postErrors = []
-
-// 	if(productPost.postName.length < 3){
-// 		postErrors.push("titleTooShort ")
-// 	}
-
-// 	if(productPost.postName.length > 50){
-// 		postErrors.push("titleTooLong ")
-// 	}
-
-// 	if(productPost.price < 0){
-// 		postErrors.push("priceNegative")
-// 	}
-
-// 	if(productPost.content.length < 10){
-// 		postErrors.push("contentTooShort ")
-// 	}
-
-// 	if(productPost.content.length > 1000){
-// 		postErrors.push("contentTooLong ")
-// 	}
-
-// 	if (productPost.category != "Furniture" && productPost.category != "Clothes" && productPost.category != "Technology" && productPost.category != "Books" && productPost.category != "Other" ){
-// 		postErrors.push("wrongCategory")
-// }
-
-// 	return postErrors
-
-// }
-
-// function validateAccount(accountUpdate){
-
-
-// 	const accountErrors = []
-
-// 	if(accountUpdate.username.length < 3){
-// 		accountErrors.push("usernameIsTooShort")
-// 	}
-
-// 	if(accountUpdate.username.length > 80){
-// 		accountErrors.push("usernameIsTooLong")
-// 	}
-
-// 	if(accountUpdate.hashedPassword.length < 10){
-//         accountErrors.push("passwordIsTooShort")
-// 	}
-
-// 	if (! /^[a-zA-Z0-9]+$/.test(username)) {
-//         // Validation failed.
-//         valid = false
-//         accountErrors.push("invalidCharacters")
-// 	}
-
-// 	return accountErrors
-
-// }
 
 function validateComment(commentUpdate){
 	
@@ -296,33 +235,6 @@ app.patch("/accounts/:id", function(request, response){
 		return
 	}
 
-	
-
-	// Look for validation errors.
-	// function validateAccount(accountUpdate){
-	// 	const accountErrors = []
-	
-	// 	if(accountUpdate.username.length < 3){
-	// 		accountErrors.push("usernameIsTooShort")
-	// 	}
-	
-	// 	if(accountUpdate.username.length > 80){
-	// 		accountErrors.push("usernameIsTooLong")
-	// 	}
-	
-	// 	if(accountUpdate.hashedPassword.length < 10){
-	// 		accountErrors.push("passwordIsTooShort")
-	// 	}
-	
-	// 	if (! /^[a-zA-Z0-9]+$/.test(username)) {
-	// 		// Validation failed.
-	// 		valid = false
-	// 		accountErrors.push("invalidCharacters")
-	// 	}
-	
-	// 	return accountErrors
-	
-	// }
 
 	const accountErrors = validateAccount(receivedAccount)
 
@@ -881,19 +793,6 @@ app.patch("/comments/:id", function(request, response){
 				response.status(401).end()
 				return
 			}
-		
-			// // Look for malformed resources.
-			// if(typeof receivedComment != "object" ||
-			// 	typeof receivedComment.accountId != "number" ||
-			// 	typeof receivedComment.postId != "number" ||
-			// 	typeof receivedComment.title != "string" ||
-			// 	typeof receivedComment.content != "string" ||
-			// 	typeof receivedComment.commentCreatedAt != "number" ){
-			// 		response.status(422).end()
-			// 		return
-			// }
-
-				// Checking if the user has change the values, if it is malformed and validates it.
 				
 			if(typeof receivedComment != "object"){
 					response.status(422).end()
